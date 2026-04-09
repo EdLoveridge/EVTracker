@@ -135,6 +135,21 @@
     .assume-item { font-size: 0.8rem; color: var(--text-muted); }
     .assume-item strong { color: var(--text); font-weight: 600; }
 
+    /* ── Household chart note ────────────────────────────────────── */
+    .house-note { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.85rem; line-height: 1.6; }
+
+    /* ── Peaker plant callout ─────────────────────────────────────── */
+    .peaker-callout { display: flex; align-items: flex-start; gap: 1.1rem;
+                      background: #fff8e1; border: 1.5px solid #f0d070;
+                      border-radius: var(--radius); padding: 1.25rem 1.5rem;
+                      margin-top: 1.25rem; box-shadow: var(--shadow); }
+    .peaker-icon { font-size: 1.6rem; flex-shrink: 0; line-height: 1; padding-top: 0.1rem; }
+    .peaker-title { font-size: 1rem; font-weight: 700; color: #5a3e00; letter-spacing: -0.01em;
+                    margin-bottom: 0.35rem; }
+    .peaker-title span { color: #c05a00; }
+    .peaker-desc { font-size: 0.82rem; color: #7a5c00; line-height: 1.6; }
+    .peaker-desc strong { color: #5a3e00; }
+
     /* ── Source ──────────────────────────────────────────────────── */
     .source { font-size: 0.72rem; color: var(--text-muted); margin-top: 1rem; }
     .source a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
@@ -291,8 +306,50 @@
       </div>
     </div>
 
-    <div class="section-header" style="margin-top:1.5rem; margin-bottom:1rem;">
-      <div class="section-tag">03 — BESS</div>
+    <!-- ── Household chart ───────────────────────────────────────── -->
+    <div class="section-header" style="margin-top:2.5rem; margin-bottom:1rem;">
+      <div class="section-tag">03 — Household</div>
+      <h2>One home, one EV</h2>
+      <p>Zoom in from the national grid to a single household. The 7.2 kW V2G charger is
+         <em>larger</em> than the typical evening peak demand (~4.5 kW) — so the EV battery
+         can cover most or all of a home's evening load entirely. The "usable V2G capacity"
+         slider above controls how much of the 60 kWh battery is available here too.</p>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Single Household Demand — Typical Winter Weekday</div>
+          <div class="chart-subtitle">Half-hourly, kilowatts (kW) · 1 EV · 60 kWh battery · 7.2 kW V2G charger · green band = plug-in window</div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-swatch dashed"></div>
+            Baseline demand
+          </div>
+          <div class="legend-item">
+            <div class="legend-swatch" style="background:var(--green);height:3px;"></div>
+            With V2G
+          </div>
+        </div>
+      </div>
+      <div id="house-chart" style="min-height:260px;"></div>
+      <div class="house-note" id="house-note"></div>
+    </div>
+
+    <!-- Peaker plant callout -->
+    <div class="peaker-callout">
+      <div class="peaker-icon">⚡</div>
+      <div>
+        <div class="peaker-title">Scale-up: equivalent to displacing
+          <span id="peaker-plants">—</span> gas peaker plant<span id="peaker-plural">s</span>
+        </div>
+        <div class="peaker-desc" id="peaker-desc">Adjust sliders to see the aggregate grid impact.</div>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:2.5rem; margin-bottom:1rem;">
+      <div class="section-tag">04 — BESS</div>
       <h2>Comparison to BESS</h2>
       <p>Current Battery Energy Storage System (BESS) capacity is 12.9GWh</p>
       <p>By 2030, this is predicted to be ~50GWh</p>
@@ -375,6 +432,184 @@ const GB_DEMAND_GW = [
 //  21:00   21:30   22:00   22:30   23:00   23:30
     40.2,   38.8,   36.5,   34.2,   32.5,   31.0
 ];
+
+// ── HOUSEHOLD DEMAND PROFILE (kW, single dwelling, winter weekday) ──
+// Shape based on Elexon Profile Class 1 (Domestic Unrestricted), scaled to
+// ~3,100 kWh/year average UK household. Key features:
+//   Morning spike  ~2.1 kW  (07:30–08:30) — kettle, toaster, shower, heating
+//   Daytime trough ~0.3 kW  (09:00–16:30) — empty house, fridges, standby
+//   Evening peak   ~4.5 kW  (18:00–18:30) — oven, TV, washing machine, heating, lights
+const HOUSE_KW = [
+//  00:00  00:30  01:00  01:30  02:00  02:30
+    0.16,  0.13,  0.11,  0.10,  0.10,  0.10,
+//  03:00  03:30  04:00  04:30  05:00  05:30
+    0.09,  0.09,  0.09,  0.09,  0.11,  0.18,
+//  06:00  06:30  07:00  07:30  08:00  08:30
+    0.42,  0.85,  1.55,  2.10,  2.35,  1.95,
+//  09:00  09:30  10:00  10:30  11:00  11:30
+    0.65,  0.45,  0.38,  0.35,  0.33,  0.32,
+//  12:00  12:30  13:00  13:30  14:00  14:30
+    0.35,  0.42,  0.38,  0.33,  0.30,  0.30,
+//  15:00  15:30  16:00  16:30  17:00  17:30
+    0.38,  0.55,  0.95,  1.85,  2.80,  3.65,
+//  18:00  18:30  19:00  19:30  20:00  20:30
+    4.20,  4.45,  4.30,  3.95,  3.45,  2.85,
+//  21:00  21:30  22:00  22:30  23:00  23:30
+    2.20,  1.65,  1.05,  0.65,  0.40,  0.25
+];
+
+// ── HOUSEHOLD V2G ALGORITHM ────────────────────────────────────────
+// 1 EV, 7.2 kW charger, energy budget = usableCapPct × 60 kWh.
+// Same greedy peak-shaving as fleet version, but units are kW/kWh.
+function computeHouseholdV2G(usableCapPct) {
+  const energyBudgetKWh = (usableCapPct / 100) * AVG_BATTERY_KWH;
+  const maxPowerKW      = CHARGER_KW;
+
+  const sorted = [...WINDOW_INDICES].sort((a, b) => HOUSE_KW[b] - HOUSE_KW[a]);
+  const modified = [...HOUSE_KW];
+  let energyLeft = energyBudgetKWh;
+
+  for (const idx of sorted) {
+    if (energyLeft <= 0) break;
+    const maxReduceKW = Math.min(maxPowerKW, energyLeft / 0.5);
+    modified[idx] = Math.max(0, modified[idx] - maxReduceKW);
+    energyLeft -= maxReduceKW * 0.5;
+  }
+
+  return {
+    modified,
+    energyBudgetKWh,
+    energyShiftedKWh: energyBudgetKWh - energyLeft
+  };
+}
+
+// ── HOUSEHOLD CHART RENDERER ───────────────────────────────────────
+function renderHouseholdChart(usableCapPct, numEVs, participationPct) {
+  const { modified, energyBudgetKWh, energyShiftedKWh }
+    = computeHouseholdV2G(usableCapPct);
+
+  const el    = document.getElementById("house-chart");
+  const W     = el.clientWidth || 900;
+  const isMob = W < 520;
+
+  const baseline = HOUSE_KW.map((d, i) => ({ period: i, demand: d }));
+  const v2gLine  = modified.map((d, i)  => ({ period: i, demand: d }));
+  const delta    = HOUSE_KW.map((d, i)  => ({ period: i, y1: modified[i], y2: d }))
+                            .filter(d => d.y2 > d.y1);
+
+  const yMax   = Math.ceil(d3.max(HOUSE_KW) * 1.1 * 2) / 2;  // round to nearest 0.5 kW
+  const xTicks = isMob
+    ? [0, 8, 16, 24, 32, 40, 47]
+    : [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 47];
+
+  const bandData = [
+    { x1: V2G_WINDOW_START - 0.25, x2: 47.25,                   y1: 0, y2: yMax },
+    { x1: -0.25,                   x2: V2G_WINDOW_END + 0.25,   y1: 0, y2: yMax }
+  ];
+
+  const plot = Plot.plot({
+    width:  W,
+    height: isMob ? 240 : 340,
+    marginLeft: 58, marginRight: 20, marginBottom: 44, marginTop: 22,
+    x: {
+      label: null,
+      domain: [0, 47],
+      ticks: xTicks,
+      tickFormat: i => TIME_LABELS[Math.round(i)]
+    },
+    y: {
+      label: "↑ Demand (kW)",
+      domain: [0, yMax],
+      tickFormat: d => d + " kW",
+      grid: true
+    },
+    style: { fontFamily: "var(--font)", fontSize: "12px", background: "transparent" },
+    marks: [
+      Plot.rect(bandData, {
+        x1: "x1", x2: "x2", y1: "y1", y2: "y2",
+        fill: "#dcf0e4", fillOpacity: 0.6
+      }),
+      ...(delta.length > 0 ? [
+        Plot.areaY(delta, {
+          x: "period", y1: "y1", y2: "y2",
+          fill: "#1a6b3a", fillOpacity: 0.2,
+          curve: "step-after"
+        })
+      ] : []),
+      Plot.areaY(baseline, {
+        x: "period", y: "demand",
+        fill: "#888", fillOpacity: 0.07,
+        curve: "step-after"
+      }),
+      Plot.lineY(baseline, {
+        x: "period", y: "demand",
+        stroke: "#999", strokeWidth: 1.5,
+        strokeDasharray: "5,4",
+        curve: "step-after"
+      }),
+      Plot.lineY(v2gLine, {
+        x: "period", y: "demand",
+        stroke: "#1a6b3a", strokeWidth: 2.5,
+        curve: "step-after"
+      }),
+      Plot.dot(
+        [baseline.reduce((a, b) => a.demand > b.demand ? a : b)],
+        { x: "period", y: "demand", fill: "#888", r: 4 }
+      ),
+      Plot.dot(
+        [v2gLine.reduce((a, b) => a.demand > b.demand ? a : b)],
+        { x: "period", y: "demand", fill: "#1a6b3a", r: 5, stroke: "white", strokeWidth: 1.5 }
+      )
+    ]
+  });
+
+  el.innerHTML = "";
+  el.appendChild(plot);
+
+  // ── UPDATE HOUSEHOLD NOTE ───────────────────────────────────────
+  const housePeakBefore  = d3.max(HOUSE_KW);
+  const housePeakAfter   = d3.max(modified);
+  const houseReductionKW = housePeakBefore - housePeakAfter;
+  const pct              = (houseReductionKW / housePeakBefore * 100);
+  const energyInReserve  = energyBudgetKWh - energyShiftedKWh;
+
+  document.getElementById("house-note").textContent = usableCapPct === 0
+    ? "Set usable V2G capacity above 0% to see peak-shaving in action."
+    : `V2G reduces this household's evening peak from ${housePeakBefore.toFixed(2)} kW` +
+      ` to ${housePeakAfter.toFixed(2)} kW — a ${pct.toFixed(0)}% reduction. ` +
+      `${energyShiftedKWh.toFixed(1)} kWh discharged, leaving ` +
+      `${energyInReserve.toFixed(1)} kWh in reserve (available to recharge overnight).`;
+
+  // ── UPDATE PEAKER CALLOUT ───────────────────────────────────────
+  // A typical UK open-cycle gas turbine (OCGT) peaker plant = ~400 MW = 0.4 GW
+  const PEAKER_GW = 0.4;
+  const participatingHouseholds = numEVs * (participationPct / 100);
+  const aggregateReductionGW    = participatingHouseholds * houseReductionKW / 1e6;
+  const peakerPlants            = aggregateReductionGW / PEAKER_GW;
+  // CO₂: OCGT emits ~0.4 tCO₂/MWh; peak event ~2 hours
+  const co2Tonnes = aggregateReductionGW * 2 * 400;  // GW × 2h × 400 tCO₂/GWh
+
+  if (participationPct === 0 || usableCapPct === 0 || houseReductionKW <= 0) {
+    document.getElementById("peaker-plants").textContent = "0";
+    document.getElementById("peaker-plural").textContent = "s";
+    document.getElementById("peaker-desc").innerHTML =
+      "Increase fleet participation and usable capacity to see the aggregate grid impact.";
+  } else {
+    document.getElementById("peaker-plants").textContent =
+      peakerPlants >= 10 ? Math.round(peakerPlants) : peakerPlants.toFixed(1);
+    document.getElementById("peaker-plural").textContent =
+      Math.round(peakerPlants * 10) === 10 ? "" : "s";
+    document.getElementById("peaker-desc").innerHTML =
+      `If <strong>${participatingHouseholds.toLocaleString()}</strong> households` +
+      ` each reduce their peak demand by <strong>${houseReductionKW.toFixed(2)} kW</strong>,` +
+      ` the aggregate saving is <strong>${aggregateReductionGW.toFixed(2)} GW</strong>.` +
+      ` A typical UK gas peaker (open-cycle gas turbine) is ~400 MW —` +
+      ` so this fleet is equivalent to displacing` +
+      ` <strong>${peakerPlants.toFixed(1)} peaker plants</strong> from the grid.` +
+      ` During a 2-hour peak event, that avoids roughly` +
+      ` <strong>${Math.round(co2Tonnes).toLocaleString()} tonnes of CO₂</strong>.`;
+  }
+}
 
 // Helper: format period index as "HH:MM"
 function timeLabel(i) {
@@ -573,6 +808,7 @@ function updateDisplay() {
     `${participationPct} <span>% of fleet</span>`;
 
   renderChart(numEVs, usableCapPct, participationPct);
+  renderHouseholdChart(usableCapPct, numEVs, participationPct);
 }
 
 ["sl-nevs", "sl-cap", "sl-part"].forEach(id => {
