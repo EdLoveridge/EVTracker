@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>V2G Simulator — EV Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #f7f6f1;
+      --surface:     #ffffff;
+      --border:      #e4e0d8;
+      --text:        #111111;
+      --text-muted:  #6b6760;
+      --green:       #1a6b3a;
+      --green-light: #dcf0e4;
+      --blue:        #1a4a8b;
+      --blue-light:  #dce8f8;
+      --radius:      8px;
+      --shadow:      0 1px 4px rgba(0,0,0,0.07);
+      --font:        'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text);
+           line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    /* ── Nav ─────────────────────────────────────────────────────── */
+    .nav { position: sticky; top: 0; z-index: 100;
+           background: rgba(255,255,255,0.96); backdrop-filter: blur(8px);
+           border-bottom: 1px solid var(--border); height: 52px; }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 2rem; height: 100%;
+                 display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { font-weight: 700; font-size: 0.9rem; letter-spacing: -0.02em;
+                color: var(--text); text-decoration: none;
+                display: flex; align-items: center; gap: 0.5rem; }
+    .nav-pip { width: 8px; height: 8px; background: var(--green); border-radius: 50%; }
+    .nav-links { display: flex; gap: 1.75rem; list-style: none;
+                 font-size: 0.82rem; color: var(--text-muted); }
+    .nav-links a { color: inherit; text-decoration: none; transition: color 0.1s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.active { color: var(--green); font-weight: 600; }
+
+    /* ── Layout ──────────────────────────────────────────────────── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+    /* ── Hero ────────────────────────────────────────────────────── */
+    .hero { padding: 5rem 0 3.5rem; border-bottom: 1px solid var(--border); }
+    .hero-eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
+                    text-transform: uppercase; color: var(--green); margin-bottom: 1rem; }
+    .hero h1 { font-size: clamp(1.9rem, 3.5vw, 3rem); font-weight: 700; line-height: 1.15;
+               letter-spacing: -0.03em; max-width: 680px; margin-bottom: 1.1rem; }
+    .hero p { font-size: 1rem; color: var(--text-muted); max-width: 600px;
+              line-height: 1.75; margin-bottom: 2.5rem; }
+    .hero-badges { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.75rem;
+             border-radius: 100px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;
+             border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted); }
+    .badge-green { background: var(--green-light); border-color: #a8d9bc; color: var(--green); }
+    .badge-blue  { background: var(--blue-light);  border-color: #a0c0e8; color: var(--blue); }
+
+    /* ── Sections ────────────────────────────────────────────────── */
+    section { padding: 4rem 0; border-bottom: 1px solid var(--border); }
+    section:last-of-type { border-bottom: none; }
+    .section-tag { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em;
+                   text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .section-header { margin-bottom: 2rem; }
+    .section-header h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.4rem; }
+    .section-header p { font-size: 0.88rem; color: var(--text-muted); max-width: 640px; line-height: 1.65; }
+
+    /* ── Sliders ─────────────────────────────────────────────────── */
+    .sliders-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                    gap: 1.5rem; margin-bottom: 2rem; }
+    .slider-card { background: var(--surface); border: 1px solid var(--border);
+                   border-radius: var(--radius); padding: 1.25rem 1.5rem;
+                   box-shadow: var(--shadow); }
+    .slider-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+                    letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.6rem; }
+    .slider-value { font-size: 1.55rem; font-weight: 700; letter-spacing: -0.03em;
+                    color: var(--text); font-variant-numeric: tabular-nums; margin-bottom: 0.75rem; }
+    .slider-value span { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+    input[type="range"] { -webkit-appearance: none; appearance: none;
+      width: 100%; height: 3px; background: var(--border); border-radius: 4px;
+      outline: none; cursor: pointer; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none;
+      width: 16px; height: 16px; background: var(--green); border-radius: 50%;
+      cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+    input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: var(--green);
+      border-radius: 50%; cursor: pointer; border: 2px solid white; }
+    .slider-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; }
+
+    /* ── Chart card ──────────────────────────────────────────────── */
+    .chart-card { background: var(--surface); border: 1px solid var(--border);
+                  border-radius: var(--radius); padding: 1.5rem;
+                  box-shadow: var(--shadow); overflow: hidden; margin-bottom: 1.5rem; }
+    .chart-card > svg { width: 100% !important; display: block; }
+    .chart-header { display: flex; justify-content: space-between; align-items: flex-start;
+                    flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .chart-title { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .chart-subtitle { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .chart-legend { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 0.45rem;
+                   font-size: 0.75rem; color: var(--text-muted); }
+    .legend-swatch { width: 20px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+    .legend-swatch.dashed { background: repeating-linear-gradient(to right,
+        #888 0px, #888 4px, transparent 4px, transparent 7px); }
+    .legend-band { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+                   background: var(--green-light); border: 1.5px solid #a8d9bc; }
+
+    /* ── Stats ───────────────────────────────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                  gap: 1rem; margin-top: 0.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border);
+                 border-radius: var(--radius); padding: 1.25rem 1.5rem;
+                 box-shadow: var(--shadow); }
+    .stat-card.highlight { border-color: #a8d9bc; background: var(--green-light); }
+    .stat-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+                  letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .stat-card.highlight .stat-label { color: #2d8050; }
+    .stat-val { font-size: 1.65rem; font-weight: 700; letter-spacing: -0.03em;
+                color: var(--text); font-variant-numeric: tabular-nums; }
+    .stat-card.highlight .stat-val { color: var(--green); }
+    .stat-unit { font-size: 0.8rem; font-weight: 500; color: var(--text-muted);
+                 margin-left: 0.15rem; }
+    .stat-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    /* ── Assumptions box ─────────────────────────────────────────── */
+    .assumptions { background: var(--surface); border: 1px solid var(--border);
+                   border-radius: var(--radius); padding: 1.25rem 1.5rem;
+                   box-shadow: var(--shadow); margin-bottom: 2rem; }
+    .assumptions-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+                         letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .assumptions-list { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .assume-item { font-size: 0.8rem; color: var(--text-muted); }
+    .assume-item strong { color: var(--text); font-weight: 600; }
+
+    /* ── Source ──────────────────────────────────────────────────── */
+    .source { font-size: 0.72rem; color: var(--text-muted); margin-top: 1rem; }
+    .source a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+    /* ── Footer ──────────────────────────────────────────────────── */
+    footer { padding: 2.5rem 0; border-top: 1px solid var(--border); background: var(--surface); }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center;
+                    flex-wrap: wrap; gap: 1rem; }
+    .footer-text { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-text a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+    /* ── Mobile ──────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .hero { padding: 2.5rem 0 2rem; }
+      .nav-links { display: none; }
+      .container { padding: 0 1rem; }
+      section { padding: 2.5rem 0; }
+      .sliders-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><span class="nav-pip"></span>EV Tracker</a>
+    <ul class="nav-links">
+      <li><a href="index.html#section-compare">Trajectories</a></li>
+      <li><a href="index.html#section-map">World Map</a></li>
+      <li><a href="index.html#section-stock">EV Stock</a></li>
+      <li><a href="index.html#section-rankings">Rankings</a></li>
+      <li><a href="v2g.html" class="active">V2G Simulator</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────────────────────── -->
+<header class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">UK Grid · Vehicle-to-Grid · Interactive Simulator</div>
+    <h1>What could EVs do<br>for the UK grid?</h1>
+    <p>Vehicle-to-Grid (V2G) technology lets EV batteries discharge electricity back to the grid
+       during peak demand periods. Adjust the sliders below to see how a V2G-enabled fleet
+       could flatten the daily demand curve and reduce peak load.</p>
+    <div class="hero-badges">
+      <span class="badge badge-green">Plug-in window: 17:30 – 08:30</span>
+      <span class="badge badge-blue">GB national demand profile</span>
+      <span class="badge">Avg. battery: 60 kWh</span>
+      <span class="badge">Charger power: 7.2 kW</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Simulator ────────────────────────────────────────────────── -->
+<section id="simulator">
+  <div class="container">
+
+    <div class="section-header">
+      <div class="section-tag">01 — Controls</div>
+      <h2>Configure the V2G fleet</h2>
+      <p>Drag the sliders to change the size and behaviour of the V2G fleet. The chart and stats
+         update instantly. EVs are assumed to plug in at 17:30 and unplug at 08:30.</p>
+    </div>
+
+    <!-- Sliders -->
+    <div class="sliders-grid">
+
+      <div class="slider-card">
+        <div class="slider-label">Number of EVs</div>
+        <div class="slider-value" id="val-nevs">1,500,000 <span>vehicles</span></div>
+        <input type="range" id="sl-nevs" min="100000" max="5000000" step="100000" value="1500000">
+        <div class="slider-hint">UK BEV fleet ~1.5M (2025 est.)</div>
+      </div>
+
+      <div class="slider-card">
+        <div class="slider-label">Usable V2G capacity</div>
+        <div class="slider-value" id="val-cap">30 <span>% of battery</span></div>
+        <input type="range" id="sl-cap" min="10" max="90" step="5" value="30">
+        <div class="slider-hint">Share of 60 kWh battery reserved for grid</div>
+      </div>
+
+      <div class="slider-card">
+        <div class="slider-label">Fleet participation</div>
+        <div class="slider-value" id="val-part">25 <span>% of fleet</span></div>
+        <input type="range" id="sl-part" min="0" max="100" step="5" value="25">
+        <div class="slider-hint">% of EVs enrolled in a V2G tariff</div>
+      </div>
+
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">GB Electricity Demand — Typical Winter Weekday</div>
+          <div class="chart-subtitle">Half-hourly, gigawatts (GW) · Green band = V2G plug-in window (17:30–08:30)</div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-swatch dashed"></div>
+            Baseline demand
+          </div>
+          <div class="legend-item">
+            <div class="legend-swatch" style="background:var(--green);height:3px;"></div>
+            With V2G
+          </div>
+          <div class="legend-item">
+            <div class="legend-band"></div>
+            Plug-in window
+          </div>
+        </div>
+      </div>
+      <div id="v2g-chart" style="min-height:300px;"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="section-header" style="margin-top:1.5rem; margin-bottom:1rem;">
+      <div class="section-tag">02 — Impact</div>
+      <h2>Grid impact summary</h2>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Peak demand (baseline)</div>
+        <div class="stat-val" id="stat-peak-before">—<span class="stat-unit">GW</span></div>
+        <div class="stat-sub">Without V2G</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">Peak demand (with V2G)</div>
+        <div class="stat-val" id="stat-peak-after">—<span class="stat-unit">GW</span></div>
+        <div class="stat-sub">Evening peak shaved</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">Peak reduction</div>
+        <div class="stat-val" id="stat-reduction">—<span class="stat-unit">GW</span></div>
+        <div class="stat-sub" id="stat-reduction-pct">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Energy shifted</div>
+        <div class="stat-val" id="stat-energy">—<span class="stat-unit">GWh</span></div>
+        <div class="stat-sub">Discharged from fleet</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Max discharge power</div>
+        <div class="stat-val" id="stat-power">—<span class="stat-unit">GW</span></div>
+        <div class="stat-sub">Fleet peak export capacity</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total energy available</div>
+        <div class="stat-val" id="stat-budget">—<span class="stat-unit">GWh</span></div>
+        <div class="stat-sub">Full V2G budget per day</div>
+      </div>
+    </div>
+
+    <div class="source">
+      Demand profile: representative GB winter weekday, based on
+      <a href="https://www.nationalgrideso.com" target="_blank">National Grid ESO</a> half-hourly settlement data ·
+      Load profile shape informed by
+      <a href="https://www.elexon.co.uk/bsc/settlement/profiling/" target="_blank">Elexon Standard Load Profiles</a> ·
+      V2G assumptions: 60 kWh avg. battery, 7.2 kW bidirectional charger, greedy peak-shaving algorithm
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <span class="footer-text">EV Tracker · Built with
+        <a href="https://observablehq.com/plot/" target="_blank">Observable Plot</a> ·
+        Hosted on <a href="https://netlify.com" target="_blank">Netlify</a>
+      </span>
+      <span class="footer-text">
+        <a href="index.html">← Back to Global EV Data</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<!-- ── Import map ─────────────────────────────────────────────────── -->
+<script type="importmap">
+{
+  "imports": {
+    "@observablehq/plot": "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm",
+    "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm"
+  }
+}
+</script>
+
+<script type="module">
+import * as Plot from "@observablehq/plot";
+import * as d3 from "d3";
+
+// ── CONSTANTS ──────────────────────────────────────────────────────
+const AVG_BATTERY_KWH = 60;   // kWh per vehicle
+const CHARGER_KW      = 7.2;  // bidirectional V2G charger power (kW)
+
+// V2G plug-in window: 17:30 (index 35) → 08:00 (index 16), wrapping overnight
+// Index = (hour * 2 + half): 00:00 = 0, 00:30 = 1, ..., 23:30 = 47
+const V2G_WINDOW_START = 35;  // 17:30
+const V2G_WINDOW_END   = 16;  // 08:00 (last period in window; 08:30 is when they unplug)
+
+// Build the window index list (wraps midnight)
+const WINDOW_INDICES = [];
+for (let i = V2G_WINDOW_START; i < 48; i++) WINDOW_INDICES.push(i);
+for (let i = 0; i <= V2G_WINDOW_END; i++) WINDOW_INDICES.push(i);
+
+// ── REPRESENTATIVE GB WINTER WEEKDAY DEMAND PROFILE (GW) ──────────
+// Source: National Grid ESO historical half-hourly settlement data
+// 48 periods: index 0 = 00:00, index 47 = 23:30
+const GB_DEMAND_GW = [
+//  00:00   00:30   01:00   01:30   02:00   02:30
+    29.5,   28.8,   28.0,   27.4,   26.9,   26.5,
+//  03:00   03:30   04:00   04:30   05:00   05:30
+    26.2,   26.0,   25.9,   26.0,   26.5,   27.8,
+//  06:00   06:30   07:00   07:30   08:00   08:30
+    30.2,   33.5,   36.8,   39.2,   40.5,   40.8,
+//  09:00   09:30   10:00   10:30   11:00   11:30
+    40.3,   39.8,   39.2,   38.8,   38.5,   38.3,
+//  12:00   12:30   13:00   13:30   14:00   14:30
+    38.0,   37.8,   37.5,   37.8,   38.0,   38.2,
+//  15:00   15:30   16:00   16:30   17:00   17:30
+    38.5,   39.2,   40.5,   42.2,   43.8,   44.8,
+//  18:00   18:30   19:00   19:30   20:00   20:30
+    45.2,   45.0,   44.5,   43.8,   42.8,   41.5,
+//  21:00   21:30   22:00   22:30   23:00   23:30
+    40.2,   38.8,   36.5,   34.2,   32.5,   31.0
+];
+
+// Helper: format period index as "HH:MM"
+function timeLabel(i) {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "00" : "30";
+  return `${String(h).padStart(2,"0")}:${m}`;
+}
+
+// Pre-build time labels for all 48 periods
+const TIME_LABELS = GB_DEMAND_GW.map((_, i) => timeLabel(i));
+
+// ── V2G PEAK-SHAVING ALGORITHM ─────────────────────────────────────
+// Greedy: discharge during highest-demand window periods first,
+// limited by max power per half-hour and total energy budget.
+function computeV2G(numEVs, usableCapPct, participationPct) {
+  const totalEnergyGWh = numEVs * (usableCapPct / 100) * (participationPct / 100)
+                         * AVG_BATTERY_KWH / 1e6;
+  const maxPowerGW     = numEVs * (participationPct / 100) * CHARGER_KW / 1e6;
+
+  // Sort window periods by baseline demand, highest first
+  const sorted = [...WINDOW_INDICES].sort((a, b) => GB_DEMAND_GW[b] - GB_DEMAND_GW[a]);
+
+  const modified = [...GB_DEMAND_GW];
+  let energyLeft = totalEnergyGWh;
+
+  for (const idx of sorted) {
+    if (energyLeft <= 0) break;
+    // Max reduction this period: limited by charger power AND remaining energy budget
+    // Each half-hour period = 0.5 h, so energy = power × 0.5
+    const maxReduceGW = Math.min(maxPowerGW, energyLeft / 0.5);
+    modified[idx] = Math.max(0, modified[idx] - maxReduceGW);
+    energyLeft -= maxReduceGW * 0.5;
+  }
+
+  const energyShifted = totalEnergyGWh - energyLeft;
+  return { modified, totalEnergyGWh, maxPowerGW, energyShifted };
+}
+
+// ── CHART RENDERER ─────────────────────────────────────────────────
+function renderChart(numEVs, usableCapPct, participationPct) {
+  const { modified, totalEnergyGWh, maxPowerGW, energyShifted }
+    = computeV2G(numEVs, usableCapPct, participationPct);
+
+  const el    = document.getElementById("v2g-chart");
+  const W     = el.clientWidth || 900;
+  const isMob = W < 520;
+
+  // Build flat data arrays for Plot
+  const baseline  = GB_DEMAND_GW.map((d, i) => ({ period: i, demand: d, series: "baseline" }));
+  const v2gLine   = modified.map((d, i)     => ({ period: i, demand: d, series: "v2g" }));
+
+  // Delta data: only where V2G actually reduces demand
+  const delta = GB_DEMAND_GW.map((d, i) => ({
+    period: i,
+    y1: modified[i],
+    y2: d
+  })).filter(d => d.y2 > d.y1);
+
+  // Y-axis domain
+  const yMax = Math.ceil(d3.max(GB_DEMAND_GW) * 1.05 / 5) * 5; // round up to next 5 GW
+
+  // X-axis ticks
+  const xTicks = isMob
+    ? [0, 8, 16, 24, 32, 40, 47]
+    : [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 47];
+
+  // Background band data for V2G window (two rectangles: evening + overnight)
+  const bandData = [
+    { x1: V2G_WINDOW_START - 0.25, x2: 47.25, y1: 0, y2: yMax },
+    { x1: -0.25,                   x2: V2G_WINDOW_END + 0.25, y1: 0, y2: yMax }
+  ];
+
+  const plot = Plot.plot({
+    width:  W,
+    height: isMob ? 280 : 420,
+    marginLeft: 52, marginRight: 20, marginBottom: 44, marginTop: 22,
+    x: {
+      label: null,
+      domain: [0, 47],
+      ticks: xTicks,
+      tickFormat: i => TIME_LABELS[Math.round(i)]
+    },
+    y: {
+      label: "↑ GB demand (GW)",
+      domain: [0, yMax],
+      tickFormat: d => d + " GW",
+      grid: true
+    },
+    style: {
+      fontFamily: "var(--font)",
+      fontSize: "12px",
+      background: "transparent"
+    },
+    marks: [
+      // Background shading: V2G plug-in window
+      Plot.rect(bandData, {
+        x1: "x1", x2: "x2", y1: "y1", y2: "y2",
+        fill: "#dcf0e4", fillOpacity: 0.6
+      }),
+
+      // Shaded delta area (peak shaving contribution)
+      ...(delta.length > 0 ? [
+        Plot.areaY(delta, {
+          x: "period", y1: "y1", y2: "y2",
+          fill: "#1a6b3a", fillOpacity: 0.18,
+          curve: "step-after"
+        })
+      ] : []),
+
+      // Baseline demand area (subtle fill)
+      Plot.areaY(baseline, {
+        x: "period", y: "demand",
+        fill: "#888", fillOpacity: 0.06,
+        curve: "step-after"
+      }),
+
+      // Baseline demand line (dashed)
+      Plot.lineY(baseline, {
+        x: "period", y: "demand",
+        stroke: "#999", strokeWidth: 1.5,
+        strokeDasharray: "5,4",
+        curve: "step-after"
+      }),
+
+      // V2G-modified demand line
+      Plot.lineY(v2gLine, {
+        x: "period", y: "demand",
+        stroke: "#1a6b3a", strokeWidth: 2.5,
+        curve: "step-after"
+      }),
+
+      // Peak marker (baseline)
+      Plot.dot(
+        [baseline.reduce((a, b) => a.demand > b.demand ? a : b)],
+        { x: "period", y: "demand", fill: "#888", r: 4 }
+      ),
+
+      // Peak marker (V2G)
+      Plot.dot(
+        [v2gLine.reduce((a, b) => a.demand > b.demand ? a : b)],
+        { x: "period", y: "demand", fill: "#1a6b3a", r: 5, stroke: "white", strokeWidth: 1.5 }
+      )
+    ]
+  });
+
+  el.innerHTML = "";
+  el.appendChild(plot);
+
+  // ── UPDATE STATS ─────────────────────────────────────────────────
+  const peakBefore  = d3.max(GB_DEMAND_GW);
+  const peakAfter   = d3.max(modified);
+  const reduction   = peakBefore - peakAfter;
+  const reductionPct = (reduction / peakBefore * 100);
+
+  function fmt1(v) { return v.toFixed(1); }
+  function fmtPct(v) { return v.toFixed(1) + "%"; }
+  function fmtBig(v) {
+    if (v >= 1000000) return (v / 1000000).toFixed(2) + "M";
+    if (v >= 1000)    return (v / 1000).toFixed(0)    + "k";
+    return v.toFixed(0);
+  }
+
+  document.getElementById("stat-peak-before").innerHTML =
+    `${fmt1(peakBefore)}<span class="stat-unit">GW</span>`;
+  document.getElementById("stat-peak-after").innerHTML =
+    `${fmt1(peakAfter)}<span class="stat-unit">GW</span>`;
+  document.getElementById("stat-reduction").innerHTML =
+    `${fmt1(reduction)}<span class="stat-unit">GW</span>`;
+  document.getElementById("stat-reduction-pct").textContent =
+    participationPct === 0 ? "No V2G fleet active" : `–${fmtPct(reductionPct)} vs baseline`;
+  document.getElementById("stat-energy").innerHTML =
+    `${fmt1(energyShifted)}<span class="stat-unit">GWh</span>`;
+  document.getElementById("stat-power").innerHTML =
+    `${fmt1(maxPowerGW)}<span class="stat-unit">GW</span>`;
+  document.getElementById("stat-budget").innerHTML =
+    `${fmt1(totalEnergyGWh)}<span class="stat-unit">GWh</span>`;
+}
+
+// ── SLIDER LOGIC ───────────────────────────────────────────────────
+function getSliderValues() {
+  return {
+    numEVs:         +document.getElementById("sl-nevs").value,
+    usableCapPct:   +document.getElementById("sl-cap").value,
+    participationPct: +document.getElementById("sl-part").value
+  };
+}
+
+function updateDisplay() {
+  const { numEVs, usableCapPct, participationPct } = getSliderValues();
+
+  document.getElementById("val-nevs").innerHTML =
+    `${numEVs.toLocaleString()} <span>vehicles</span>`;
+  document.getElementById("val-cap").innerHTML =
+    `${usableCapPct} <span>% of battery</span>`;
+  document.getElementById("val-part").innerHTML =
+    `${participationPct} <span>% of fleet</span>`;
+
+  renderChart(numEVs, usableCapPct, participationPct);
+}
+
+["sl-nevs", "sl-cap", "sl-part"].forEach(id => {
+  document.getElementById(id).addEventListener("input", updateDisplay);
+});
+
+// ── RESIZE ─────────────────────────────────────────────────────────
+let _rt;
+window.addEventListener("resize", () => {
+  clearTimeout(_rt);
+  _rt = setTimeout(updateDisplay, 240);
+});
+
+// ── INIT ───────────────────────────────────────────────────────────
+updateDisplay();
+
+</script>
+</body>
+</html>
