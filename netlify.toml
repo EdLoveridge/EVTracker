@@ -1,0 +1,32 @@
+# Netlify configuration for EV Tracker
+# Docs: https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  publish = "."          # serve from root (static site, no build step)
+
+# ── Security headers ────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# ── Cache CSV data for 1 hour, allow stale for 1 day ────────────
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, stale-while-revalidate=86400"
+    Content-Type = "text/csv; charset=utf-8"
+
+# ── Cache static assets aggressively ────────────────────────────
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# ── SPA fallback (serves index.html for all unmatched routes) ───
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200

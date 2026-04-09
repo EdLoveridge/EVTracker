@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Global EV Tracker — Electric Vehicle Penetration by Country</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #f7f6f1;
+      --surface:     #ffffff;
+      --border:      #e4e0d8;
+      --text:        #111111;
+      --text-muted:  #6b6760;
+      --green:       #1a6b3a;
+      --green-light: #dcf0e4;
+      --radius:      8px;
+      --shadow:      0 1px 4px rgba(0,0,0,0.07);
+      --font:        'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text);
+           line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    /* Nav */
+    .nav { position: sticky; top: 0; z-index: 100;
+           background: rgba(255,255,255,0.96); backdrop-filter: blur(8px);
+           border-bottom: 1px solid var(--border); height: 52px; }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 2rem; height: 100%;
+                 display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { font-weight: 700; font-size: 0.9rem; letter-spacing: -0.02em;
+                color: var(--text); text-decoration: none;
+                display: flex; align-items: center; gap: 0.5rem; }
+    .nav-pip { width: 8px; height: 8px; background: var(--green); border-radius: 50%; }
+    .nav-links { display: flex; gap: 1.75rem; list-style: none;
+                 font-size: 0.82rem; color: var(--text-muted); }
+    .nav-links a { color: inherit; text-decoration: none; transition: color 0.1s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+    /* Hero */
+    .hero { padding: 5rem 0 3.5rem; border-bottom: 1px solid var(--border); }
+    .hero-eyebrow { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
+                    text-transform: uppercase; color: var(--green); margin-bottom: 1rem; }
+    .hero h1 { font-size: clamp(1.9rem, 3.5vw, 3rem); font-weight: 700; line-height: 1.15;
+               letter-spacing: -0.03em; max-width: 680px; margin-bottom: 1.1rem; }
+    .hero p { font-size: 1rem; color: var(--text-muted); max-width: 560px;
+              line-height: 1.75; margin-bottom: 2.5rem; }
+    .hero-stats { display: flex; gap: 3rem; flex-wrap: wrap; }
+    .stat { display: flex; flex-direction: column; gap: 0.2rem; }
+    .stat-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em;
+                  color: var(--green); font-variant-numeric: tabular-nums; }
+    .stat-label { font-size: 0.72rem; color: var(--text-muted);
+                  text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* Sections */
+    section { padding: 4rem 0; border-bottom: 1px solid var(--border); }
+    section:last-of-type { border-bottom: none; }
+    .section-tag { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em;
+                   text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .section-header { margin-bottom: 2rem; }
+    .section-header h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.4rem; }
+    .section-header p { font-size: 0.88rem; color: var(--text-muted); max-width: 600px; }
+
+    /* Controls */
+    .controls { display: flex; gap: 1.5rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .control-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .control-label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+                     letter-spacing: 0.07em; color: var(--text-muted); }
+    .year-slider-wrap { display: flex; align-items: center; gap: 0.9rem; }
+    .year-display { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em;
+                    min-width: 4ch; font-variant-numeric: tabular-nums; }
+    input[type="range"] { -webkit-appearance: none; appearance: none;
+      width: 200px; height: 3px; background: var(--border); border-radius: 4px;
+      outline: none; cursor: pointer; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none;
+      width: 16px; height: 16px; background: var(--green); border-radius: 50%;
+      cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
+    input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: var(--green);
+      border-radius: 50%; cursor: pointer; border: 2px solid white; }
+
+    /* Chart card */
+    .chart-card { background: var(--surface); border: 1px solid var(--border);
+                  border-radius: var(--radius); padding: 1.5rem;
+                  box-shadow: var(--shadow); overflow: hidden; }
+    .chart-card > svg { width: 100% !important; display: block; }
+    .chart-loading { display: flex; align-items: center; justify-content: center;
+                     min-height: 300px; color: var(--text-muted); font-size: 0.85rem; }
+
+    /* Map legend */
+    .map-legend { margin-top: 1rem; padding: 0 0.25rem; }
+    .map-legend-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+                        letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .map-legend-ramp { height: 8px; border-radius: 4px;
+      background: linear-gradient(to right,#f7fcf5,#e5f5e0,#c7e9c0,#a1d99b,#74c476,#41ab5d,#238b45,#006d2c,#00441b); }
+    .map-legend-ticks { display: flex; justify-content: space-between; margin-top: 0.3rem;
+                        font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+    /* Country tags */
+    .tag-group { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1.5rem; }
+    .ctag { display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.3rem 0.75rem; border-radius: 100px; font-size: 0.78rem; font-weight: 500;
+            border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted);
+            cursor: pointer; user-select: none; transition: all 0.12s; }
+    .ctag:hover:not(.active) { border-color: var(--text); color: var(--text); }
+    .ctag.active { background: var(--text); border-color: var(--text); color: white; }
+
+    /* Annotation pills */
+    .annotation-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+    .anno-pill { display: inline-flex; align-items: center; gap: 0.35rem;
+                 padding: 0.25rem 0.65rem; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+
+    /* League table */
+    .rank-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .rank-table th { text-align: left; font-weight: 600; font-size: 0.7rem;
+                     text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted);
+                     padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); }
+    .rank-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .rank-table tr:last-child td { border-bottom: none; }
+    .rank-table tbody tr:hover td { background: var(--bg); }
+    .rank-num { font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .rank-flag { font-size: 1.1rem; margin-right: 0.4rem; }
+    .rank-country { font-weight: 600; }
+    .rank-bar-cell { width: 200px; }
+    .rank-bar-bg { height: 6px; background: var(--green-light); border-radius: 3px; overflow: hidden; }
+    .rank-bar-fill { height: 100%; background: var(--green); border-radius: 3px; }
+    .rank-value { font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+
+    /* Data note badge */
+    .data-badge { display: inline-flex; align-items: center; gap: 0.4rem;
+                  padding: 0.3rem 0.7rem; border-radius: 100px; font-size: 0.72rem; font-weight: 500;
+                  background: #fff8e1; color: #7a5c00; border: 1px solid #f0d070; margin-bottom: 1rem; }
+
+    /* Source */
+    .source { font-size: 0.72rem; color: var(--text-muted); margin-top: 1rem; }
+    .source a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+    /* Footer */
+    footer { padding: 2.5rem 0; border-top: 1px solid var(--border); background: var(--surface); }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center;
+                    flex-wrap: wrap; gap: 1rem; }
+    .footer-text { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-text a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .hero { padding: 2.5rem 0 2rem; }
+      .hero-stats { gap: 1.75rem; }
+      .nav-links { display: none; }
+      .rank-bar-cell { display: none; }
+      input[type="range"] { width: 130px; }
+      .container { padding: 0 1rem; }
+      section { padding: 2.5rem 0; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo"><span class="nav-pip"></span>EV Tracker</a>
+    <ul class="nav-links">
+      <li><a href="#section-compare">Trajectories</a></li>
+      <li><a href="#section-map">World Map</a></li>
+      <li><a href="#section-stock">EV Stock</a></li>
+      <li><a href="#section-rankings">Rankings</a></li>
+      <li><a href="data/ev-penetration.csv" download>Download CSV</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">IEA Global EV Outlook · 2015–2024 · 46 Countries</div>
+    <h1>Tracking electric vehicle adoption<br>around the world</h1>
+    <p>Cars only (battery electric + plug-in hybrid) as a share of new car sales. Data from the IEA Global EV Data Explorer, updated annually.</p>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-value" id="stat-leader-pct">—</span>
+        <span class="stat-label" id="stat-leader-name">Leading country (2024)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="stat-china-share">—</span>
+        <span class="stat-label">China EV share (2024)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="stat-china-stock">—</span>
+        <span class="stat-label">China EV stock (2024)</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">46</span>
+        <span class="stat-label">Countries tracked</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- 01 Trajectories -->
+<section id="section-compare">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">01 · Trajectories</div>
+      <h2>Country trajectories over time</h2>
+      <p>Toggle countries to compare EV adoption curves, 2015–2024. Covers cars only (BEV + PHEV as % of new car sales).</p>
+    </div>
+    <div class="data-badge">⚡ Cars only — does not include two-wheelers, buses or trucks</div>
+    <div id="country-tags" class="tag-group"></div>
+    <div class="annotation-row" id="compare-annotations"></div>
+    <div class="chart-card" id="line-chart"><div class="chart-loading">Building chart…</div></div>
+    <p class="source">Source: <a href="https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer" target="_blank" rel="noopener">IEA Global EV Data Explorer</a></p>
+  </div>
+</section>
+
+<!-- 02 World Map -->
+<section id="section-map">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">02 · World Map</div>
+      <h2>EV penetration by country</h2>
+      <p>Darker green = higher EV share. Drag the slider to animate across years. Countries without data shown in grey.</p>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <span class="control-label">Year</span>
+        <div class="year-slider-wrap">
+          <span class="year-display" id="map-year-label">2024</span>
+          <input type="range" id="map-year-slider" min="2015" max="2024" value="2024" step="1">
+        </div>
+      </div>
+    </div>
+    <div class="chart-card" id="map-chart">
+      <div class="chart-loading">Loading world map…</div>
+      <div class="map-legend">
+        <div class="map-legend-label">EV share of new car sales</div>
+        <div class="map-legend-ramp"></div>
+        <div class="map-legend-ticks">
+          <span>0%</span><span>20%</span><span>40%</span><span>60%</span><span>80%+</span>
+        </div>
+      </div>
+    </div>
+    <p class="source">Source: <a href="https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer" target="_blank" rel="noopener">IEA Global EV Data Explorer</a>. Countries not in dataset shown in light grey.</p>
+  </div>
+</section>
+
+<!-- 03 EV Stock -->
+<section id="section-stock">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">03 · EV Stock</div>
+      <h2>Total EVs on the road</h2>
+      <p>Absolute number of electric cars (BEV + PHEV) in use. A country can have a modest penetration rate but an enormous total fleet — China is the clearest example.</p>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <span class="control-label">Year</span>
+        <div class="year-slider-wrap">
+          <span class="year-display" id="stock-year-label">2024</span>
+          <input type="range" id="stock-year-slider" min="2015" max="2024" value="2024" step="1">
+        </div>
+      </div>
+    </div>
+    <div class="chart-card" id="stock-chart"><div class="chart-loading">Building chart…</div></div>
+    <p class="source">Source: <a href="https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer" target="_blank" rel="noopener">IEA Global EV Data Explorer</a></p>
+  </div>
+</section>
+
+<!-- 04 Rankings -->
+<section id="section-rankings">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">04 · Leaderboard</div>
+      <h2>Country league table</h2>
+      <p>All 46 countries ranked by EV share of new car sales. Move the slider to replay how rankings have shifted year by year.</p>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <span class="control-label">Year</span>
+        <div class="year-slider-wrap">
+          <span class="year-display" id="rank-year-label">2024</span>
+          <input type="range" id="rank-year-slider" min="2015" max="2024" value="2024" step="1">
+        </div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <table class="rank-table">
+        <thead>
+          <tr><th>#</th><th>Country</th><th class="rank-bar-cell"></th><th>EV Share</th><th>vs prev year</th></tr>
+        </thead>
+        <tbody id="rank-tbody"></tbody>
+      </table>
+    </div>
+    <p class="source">Source: <a href="https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer" target="_blank" rel="noopener">IEA Global EV Data Explorer</a></p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <p class="footer-text">Data: <a href="https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer" target="_blank">IEA Global EV Outlook</a> · BEV + PHEV cars · <a href="data/ev-penetration.csv" download>Download CSV</a></p>
+      <p class="footer-text">Built with <a href="https://observablehq.com/plot/" target="_blank">Observable Plot</a> · Hosted on <a href="https://netlify.com" target="_blank">Netlify</a></p>
+    </div>
+  </div>
+</footer>
+
+<script type="importmap">
+{
+  "imports": {
+    "@observablehq/plot": "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm",
+    "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm",
+    "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3/+esm"
+  }
+}
+</script>
+
+<script type="module">
+import * as Plot from "@observablehq/plot";
+import * as d3 from "d3";
+import * as topojson from "topojson-client";
+
+// ── SHARE DATA  [country, iso3, iso_num, year, share_%] ──────────
+const SHARE_RAW = [
+  // Australia
+  ["Australia","AUS",36,2015,0.2],["Australia","AUS",36,2016,0.1],["Australia","AUS",36,2017,0.2],["Australia","AUS",36,2018,0.4],["Australia","AUS",36,2019,1.2],["Australia","AUS",36,2020,1.1],["Australia","AUS",36,2021,2.8],["Australia","AUS",36,2022,5.0],["Australia","AUS",36,2023,12.0],["Australia","AUS",36,2024,13.0],
+  // Austria
+  ["Austria","AUT",40,2015,0.9],["Austria","AUT",40,2016,1.5],["Austria","AUT",40,2017,2.0],["Austria","AUT",40,2018,2.6],["Austria","AUT",40,2019,3.5],["Austria","AUT",40,2020,9.5],["Austria","AUT",40,2021,20.0],["Austria","AUT",40,2022,22.0],["Austria","AUT",40,2023,27.0],["Austria","AUT",40,2024,24.0],
+  // Belgium
+  ["Belgium","BEL",56,2015,0.8],["Belgium","BEL",56,2016,1.7],["Belgium","BEL",56,2017,2.6],["Belgium","BEL",56,2018,2.4],["Belgium","BEL",56,2019,3.2],["Belgium","BEL",56,2020,11.0],["Belgium","BEL",56,2021,18.0],["Belgium","BEL",56,2022,26.0],["Belgium","BEL",56,2023,41.0],["Belgium","BEL",56,2024,43.0],
+  // Brazil
+  ["Brazil","BRA",76,2015,0.0],["Brazil","BRA",76,2016,0.0],["Brazil","BRA",76,2017,0.0],["Brazil","BRA",76,2018,0.0],["Brazil","BRA",76,2019,0.1],["Brazil","BRA",76,2020,0.2],["Brazil","BRA",76,2021,0.9],["Brazil","BRA",76,2022,1.2],["Brazil","BRA",76,2023,3.0],["Brazil","BRA",76,2024,6.4],
+  // Bulgaria
+  ["Bulgaria","BGR",100,2015,0.1],["Bulgaria","BGR",100,2016,0.1],["Bulgaria","BGR",100,2017,0.3],["Bulgaria","BGR",100,2018,0.6],["Bulgaria","BGR",100,2019,0.7],["Bulgaria","BGR",100,2021,2.2],["Bulgaria","BGR",100,2022,4.0],["Bulgaria","BGR",100,2023,5.8],["Bulgaria","BGR",100,2024,5.0],
+  // Canada
+  ["Canada","CAN",124,2015,0.5],["Canada","CAN",124,2016,0.8],["Canada","CAN",124,2017,1.0],["Canada","CAN",124,2018,2.8],["Canada","CAN",124,2019,3.4],["Canada","CAN",124,2020,4.2],["Canada","CAN",124,2021,6.4],["Canada","CAN",124,2022,9.5],["Canada","CAN",124,2023,13.0],["Canada","CAN",124,2024,17.0],
+  // Chile
+  ["Chile","CHL",152,2015,0.0],["Chile","CHL",152,2016,0.0],["Chile","CHL",152,2017,0.1],["Chile","CHL",152,2018,0.1],["Chile","CHL",152,2019,0.1],["Chile","CHL",152,2020,0.2],["Chile","CHL",152,2021,0.3],["Chile","CHL",152,2022,0.6],["Chile","CHL",152,2023,0.8],["Chile","CHL",152,2024,2.1],
+  // China
+  ["China","CHN",156,2015,1.0],["China","CHN",156,2016,1.5],["China","CHN",156,2017,2.4],["China","CHN",156,2018,4.7],["China","CHN",156,2019,5.0],["China","CHN",156,2020,5.7],["China","CHN",156,2021,15.0],["China","CHN",156,2022,29.0],["China","CHN",156,2023,38.0],["China","CHN",156,2024,48.0],
+  // Colombia
+  ["Colombia","COL",170,2015,0.0],["Colombia","COL",170,2016,0.0],["Colombia","COL",170,2017,0.1],["Colombia","COL",170,2018,0.4],["Colombia","COL",170,2019,0.8],["Colombia","COL",170,2020,0.9],["Colombia","COL",170,2021,1.7],["Colombia","COL",170,2022,2.9],["Colombia","COL",170,2023,3.9],["Colombia","COL",170,2024,7.4],
+  // Costa Rica
+  ["Costa Rica","CRI",188,2015,0.0],["Costa Rica","CRI",188,2016,0.2],["Costa Rica","CRI",188,2017,0.1],["Costa Rica","CRI",188,2018,0.8],["Costa Rica","CRI",188,2019,1.2],["Costa Rica","CRI",188,2020,2.5],["Costa Rica","CRI",188,2021,3.6],["Costa Rica","CRI",188,2022,7.6],["Costa Rica","CRI",188,2023,13.0],["Costa Rica","CRI",188,2024,15.0],
+  // Croatia
+  ["Croatia","HRV",191,2019,0.4],["Croatia","HRV",191,2020,1.9],["Croatia","HRV",191,2021,3.8],["Croatia","HRV",191,2022,5.0],["Croatia","HRV",191,2023,4.6],["Croatia","HRV",191,2024,4.9],
+  // Cyprus
+  ["Cyprus","CYP",196,2019,0.2],["Cyprus","CYP",196,2020,1.4],["Cyprus","CYP",196,2021,1.7],["Cyprus","CYP",196,2022,5.4],["Cyprus","CYP",196,2023,8.8],["Cyprus","CYP",196,2024,12.0],
+  // Czech Republic
+  ["Czech Republic","CZE",203,2015,0.1],["Czech Republic","CZE",203,2016,0.1],["Czech Republic","CZE",203,2017,0.1],["Czech Republic","CZE",203,2018,0.4],["Czech Republic","CZE",203,2019,0.5],["Czech Republic","CZE",203,2020,2.5],["Czech Republic","CZE",203,2021,3.1],["Czech Republic","CZE",203,2022,3.9],["Czech Republic","CZE",203,2023,5.4],["Czech Republic","CZE",203,2024,6.8],
+  // Denmark
+  ["Denmark","DNK",208,2015,2.3],["Denmark","DNK",208,2016,0.8],["Denmark","DNK",208,2017,0.6],["Denmark","DNK",208,2018,2.1],["Denmark","DNK",208,2019,4.2],["Denmark","DNK",208,2020,16.0],["Denmark","DNK",208,2021,35.0],["Denmark","DNK",208,2022,38.0],["Denmark","DNK",208,2023,46.0],["Denmark","DNK",208,2024,56.0],
+  // Estonia
+  ["Estonia","EST",233,2015,0.2],["Estonia","EST",233,2016,0.1],["Estonia","EST",233,2017,0.2],["Estonia","EST",233,2018,0.5],["Estonia","EST",233,2019,0.4],["Estonia","EST",233,2020,1.8],["Estonia","EST",233,2021,3.2],["Estonia","EST",233,2022,5.4],["Estonia","EST",233,2023,8.8],["Estonia","EST",233,2024,10.0],
+  // Finland
+  ["Finland","FIN",246,2015,0.6],["Finland","FIN",246,2016,1.2],["Finland","FIN",246,2017,2.5],["Finland","FIN",246,2018,4.6],["Finland","FIN",246,2019,6.7],["Finland","FIN",246,2020,18.0],["Finland","FIN",246,2021,30.0],["Finland","FIN",246,2022,37.0],["Finland","FIN",246,2023,54.0],["Finland","FIN",246,2024,50.0],
+  // France
+  ["France","FRA",250,2015,1.2],["France","FRA",250,2016,1.4],["France","FRA",250,2017,1.7],["France","FRA",250,2018,2.0],["France","FRA",250,2019,2.7],["France","FRA",250,2020,11.0],["France","FRA",250,2021,17.0],["France","FRA",250,2022,20.0],["France","FRA",250,2023,25.0],["France","FRA",250,2024,24.0],
+  // Germany
+  ["Germany","DEU",276,2015,0.7],["Germany","DEU",276,2016,0.7],["Germany","DEU",276,2017,1.6],["Germany","DEU",276,2018,2.0],["Germany","DEU",276,2019,3.0],["Germany","DEU",276,2020,14.0],["Germany","DEU",276,2021,26.0],["Germany","DEU",276,2022,31.0],["Germany","DEU",276,2023,24.0],["Germany","DEU",276,2024,19.0],
+  // Greece
+  ["Greece","GRC",300,2015,0.1],["Greece","GRC",300,2016,0.1],["Greece","GRC",300,2017,0.2],["Greece","GRC",300,2018,0.3],["Greece","GRC",300,2019,0.4],["Greece","GRC",300,2020,2.7],["Greece","GRC",300,2021,6.9],["Greece","GRC",300,2022,7.9],["Greece","GRC",300,2023,13.0],["Greece","GRC",300,2024,12.0],
+  // Hungary
+  ["Hungary","HUN",348,2015,0.2],["Hungary","HUN",348,2016,0.4],["Hungary","HUN",348,2017,1.0],["Hungary","HUN",348,2018,1.5],["Hungary","HUN",348,2019,1.9],["Hungary","HUN",348,2020,4.7],["Hungary","HUN",348,2021,7.0],["Hungary","HUN",348,2022,8.6],["Hungary","HUN",348,2023,11.0],["Hungary","HUN",348,2024,12.0],
+  // Iceland
+  ["Iceland","ISL",352,2015,3.9],["Iceland","ISL",352,2016,6.3],["Iceland","ISL",352,2017,14.0],["Iceland","ISL",352,2018,20.0],["Iceland","ISL",352,2019,26.0],["Iceland","ISL",352,2020,52.0],["Iceland","ISL",352,2021,70.0],["Iceland","ISL",352,2022,69.0],["Iceland","ISL",352,2023,71.0],["Iceland","ISL",352,2024,42.0],
+  // India
+  ["India","IND",356,2015,0.0],["India","IND",356,2016,0.0],["India","IND",356,2017,0.0],["India","IND",356,2018,0.0],["India","IND",356,2019,0.0],["India","IND",356,2020,0.1],["India","IND",356,2021,0.4],["India","IND",356,2022,1.4],["India","IND",356,2023,2.1],["India","IND",356,2024,2.1],
+  // Indonesia
+  ["Indonesia","IDN",360,2017,0.0],["Indonesia","IDN",360,2018,0.0],["Indonesia","IDN",360,2019,0.0],["Indonesia","IDN",360,2020,0.1],["Indonesia","IDN",360,2021,0.1],["Indonesia","IDN",360,2022,1.4],["Indonesia","IDN",360,2023,2.2],["Indonesia","IDN",360,2024,7.3],
+  // Ireland
+  ["Ireland","IRL",372,2015,0.5],["Ireland","IRL",372,2016,0.5],["Ireland","IRL",372,2017,0.7],["Ireland","IRL",372,2018,1.6],["Ireland","IRL",372,2019,4.1],["Ireland","IRL",372,2020,7.4],["Ireland","IRL",372,2021,16.0],["Ireland","IRL",372,2022,22.0],["Ireland","IRL",372,2023,27.0],["Ireland","IRL",372,2024,25.0],
+  // Israel
+  ["Israel","ISR",376,2015,0.0],["Israel","ISR",376,2016,0.0],["Israel","ISR",376,2017,0.5],["Israel","ISR",376,2018,1.2],["Israel","ISR",376,2019,1.6],["Israel","ISR",376,2020,2.6],["Israel","ISR",376,2021,6.9],["Israel","ISR",376,2022,12.0],["Israel","ISR",376,2023,17.0],["Israel","ISR",376,2024,21.0],
+  // Italy
+  ["Italy","ITA",380,2015,0.1],["Italy","ITA",380,2016,0.1],["Italy","ITA",380,2017,0.2],["Italy","ITA",380,2018,0.5],["Italy","ITA",380,2019,0.9],["Italy","ITA",380,2020,4.2],["Italy","ITA",380,2021,9.1],["Italy","ITA",380,2022,8.5],["Italy","ITA",380,2023,9.2],["Italy","ITA",380,2024,7.9],
+  // Japan
+  ["Japan","JPN",392,2015,0.6],["Japan","JPN",392,2016,0.6],["Japan","JPN",392,2017,1.2],["Japan","JPN",392,2018,1.1],["Japan","JPN",392,2019,0.9],["Japan","JPN",392,2020,0.8],["Japan","JPN",392,2021,1.2],["Japan","JPN",392,2022,2.8],["Japan","JPN",392,2023,3.5],["Japan","JPN",392,2024,2.8],
+  // Korea
+  ["Korea","KOR",410,2015,0.2],["Korea","KOR",410,2016,0.3],["Korea","KOR",410,2017,1.0],["Korea","KOR",410,2018,3.9],["Korea","KOR",410,2019,2.4],["Korea","KOR",410,2020,2.5],["Korea","KOR",410,2021,6.3],["Korea","KOR",410,2022,9.6],["Korea","KOR",410,2023,8.7],["Korea","KOR",410,2024,9.2],
+  // Latvia
+  ["Latvia","LVA",428,2015,0.2],["Latvia","LVA",428,2016,0.2],["Latvia","LVA",428,2017,0.2],["Latvia","LVA",428,2018,0.5],["Latvia","LVA",428,2019,0.5],["Latvia","LVA",428,2020,2.6],["Latvia","LVA",428,2021,3.9],["Latvia","LVA",428,2022,8.1],["Latvia","LVA",428,2023,11.0],["Latvia","LVA",428,2024,12.0],
+  // Lithuania
+  ["Lithuania","LTU",440,2015,0.2],["Lithuania","LTU",440,2016,0.3],["Lithuania","LTU",440,2017,0.2],["Lithuania","LTU",440,2019,0.3],["Lithuania","LTU",440,2020,1.1],["Lithuania","LTU",440,2021,5.0],["Lithuania","LTU",440,2022,7.9],["Lithuania","LTU",440,2023,11.0],["Lithuania","LTU",440,2024,12.0],
+  // Luxembourg
+  ["Luxembourg","LUX",442,2019,3.5],["Luxembourg","LUX",442,2020,11.0],["Luxembourg","LUX",442,2021,20.0],["Luxembourg","LUX",442,2022,24.0],["Luxembourg","LUX",442,2023,32.0],["Luxembourg","LUX",442,2024,36.0],
+  // Mexico
+  ["Mexico","MEX",484,2015,0.0],["Mexico","MEX",484,2016,0.1],["Mexico","MEX",484,2017,0.1],["Mexico","MEX",484,2018,0.1],["Mexico","MEX",484,2019,0.1],["Mexico","MEX",484,2020,0.5],["Mexico","MEX",484,2021,0.8],["Mexico","MEX",484,2022,1.0],["Mexico","MEX",484,2023,1.5],["Mexico","MEX",484,2024,2.2],
+  // Netherlands
+  ["Netherlands","NLD",528,2015,3.5],["Netherlands","NLD",528,2016,11.0],["Netherlands","NLD",528,2017,6.4],["Netherlands","NLD",528,2018,6.2],["Netherlands","NLD",528,2019,15.0],["Netherlands","NLD",528,2020,25.0],["Netherlands","NLD",528,2021,29.0],["Netherlands","NLD",528,2022,35.0],["Netherlands","NLD",528,2023,44.0],["Netherlands","NLD",528,2024,48.0],
+  // New Zealand
+  ["New Zealand","NZL",554,2015,0.6],["New Zealand","NZL",554,2016,1.7],["New Zealand","NZL",554,2017,3.4],["New Zealand","NZL",554,2018,4.9],["New Zealand","NZL",554,2019,5.9],["New Zealand","NZL",554,2020,5.4],["New Zealand","NZL",554,2021,7.6],["New Zealand","NZL",554,2022,18.0],["New Zealand","NZL",554,2023,27.0],["New Zealand","NZL",554,2024,11.0],
+  // Norway
+  ["Norway","NOR",578,2015,22.0],["Norway","NOR",578,2016,29.0],["Norway","NOR",578,2017,39.0],["Norway","NOR",578,2018,49.0],["Norway","NOR",578,2019,56.0],["Norway","NOR",578,2020,75.0],["Norway","NOR",578,2021,86.0],["Norway","NOR",578,2022,89.0],["Norway","NOR",578,2023,90.0],["Norway","NOR",578,2024,92.0],
+  // Poland
+  ["Poland","POL",616,2015,0.1],["Poland","POL",616,2016,0.1],["Poland","POL",616,2017,0.2],["Poland","POL",616,2018,0.3],["Poland","POL",616,2019,0.5],["Poland","POL",616,2020,1.9],["Poland","POL",616,2021,3.6],["Poland","POL",616,2022,5.9],["Poland","POL",616,2023,6.4],["Poland","POL",616,2024,5.7],
+  // Portugal
+  ["Portugal","PRT",620,2015,0.6],["Portugal","PRT",620,2016,0.9],["Portugal","PRT",620,2017,1.9],["Portugal","PRT",620,2018,3.6],["Portugal","PRT",620,2019,5.6],["Portugal","PRT",620,2020,13.0],["Portugal","PRT",620,2021,20.0],["Portugal","PRT",620,2022,22.0],["Portugal","PRT",620,2023,32.0],["Portugal","PRT",620,2024,33.0],
+  // Romania
+  ["Romania","ROU",642,2015,0.0],["Romania","ROU",642,2016,0.1],["Romania","ROU",642,2017,0.2],["Romania","ROU",642,2018,0.5],["Romania","ROU",642,2019,0.9],["Romania","ROU",642,2020,3.1],["Romania","ROU",642,2021,5.2],["Romania","ROU",642,2022,9.0],["Romania","ROU",642,2023,11.0],["Romania","ROU",642,2024,6.5],
+  // Slovakia
+  ["Slovakia","SVK",703,2015,0.1],["Slovakia","SVK",703,2016,0.1],["Slovakia","SVK",703,2017,0.2],["Slovakia","SVK",703,2018,0.3],["Slovakia","SVK",703,2019,0.4],["Slovakia","SVK",703,2020,2.3],["Slovakia","SVK",703,2021,3.0],["Slovakia","SVK",703,2022,3.7],["Slovakia","SVK",703,2023,6.1],["Slovakia","SVK",703,2024,4.8],
+  // Slovenia
+  ["Slovenia","SVN",705,2016,0.3],["Slovenia","SVN",705,2017,0.6],["Slovenia","SVN",705,2018,0.9],["Slovenia","SVN",705,2019,0.3],["Slovenia","SVN",705,2020,3.1],["Slovenia","SVN",705,2021,3.8],["Slovenia","SVN",705,2022,6.2],["Slovenia","SVN",705,2023,11.0],["Slovenia","SVN",705,2024,8.1],
+  // South Africa
+  ["South Africa","ZAF",710,2015,0.1],["South Africa","ZAF",710,2016,0.1],["South Africa","ZAF",710,2017,0.1],["South Africa","ZAF",710,2018,0.0],["South Africa","ZAF",710,2019,0.1],["South Africa","ZAF",710,2020,0.1],["South Africa","ZAF",710,2021,0.1],["South Africa","ZAF",710,2022,0.2],["South Africa","ZAF",710,2023,0.3],["South Africa","ZAF",710,2024,0.6],
+  // Spain
+  ["Spain","ESP",724,2015,0.2],["Spain","ESP",724,2016,0.3],["Spain","ESP",724,2017,0.6],["Spain","ESP",724,2018,0.8],["Spain","ESP",724,2019,1.3],["Spain","ESP",724,2020,4.5],["Spain","ESP",724,2021,7.3],["Spain","ESP",724,2022,8.9],["Spain","ESP",724,2023,12.0],["Spain","ESP",724,2024,11.0],
+  // Sweden
+  ["Sweden","SWE",752,2015,2.4],["Sweden","SWE",752,2016,3.4],["Sweden","SWE",752,2017,5.1],["Sweden","SWE",752,2018,7.6],["Sweden","SWE",752,2019,11.0],["Sweden","SWE",752,2020,32.0],["Sweden","SWE",752,2021,43.0],["Sweden","SWE",752,2022,54.0],["Sweden","SWE",752,2023,60.0],["Sweden","SWE",752,2024,58.0],
+  // Switzerland
+  ["Switzerland","CHE",756,2015,1.7],["Switzerland","CHE",756,2016,1.9],["Switzerland","CHE",756,2017,2.6],["Switzerland","CHE",756,2018,3.1],["Switzerland","CHE",756,2019,5.5],["Switzerland","CHE",756,2020,14.0],["Switzerland","CHE",756,2021,21.0],["Switzerland","CHE",756,2022,25.0],["Switzerland","CHE",756,2023,30.0],["Switzerland","CHE",756,2024,28.0],
+  // Thailand
+  ["Thailand","THA",764,2015,0.0],["Thailand","THA",764,2016,0.0],["Thailand","THA",764,2017,0.0],["Thailand","THA",764,2018,0.9],["Thailand","THA",764,2019,1.0],["Thailand","THA",764,2020,1.1],["Thailand","THA",764,2021,1.2],["Thailand","THA",764,2022,2.3],["Thailand","THA",764,2023,11.0],["Thailand","THA",764,2024,13.0],
+  // United Kingdom
+  ["United Kingdom","GBR",826,2015,1.1],["United Kingdom","GBR",826,2016,1.4],["United Kingdom","GBR",826,2017,1.9],["United Kingdom","GBR",826,2018,2.6],["United Kingdom","GBR",826,2019,3.3],["United Kingdom","GBR",826,2020,11.0],["United Kingdom","GBR",826,2021,19.0],["United Kingdom","GBR",826,2022,23.0],["United Kingdom","GBR",826,2023,24.0],["United Kingdom","GBR",826,2024,28.0],
+];
+
+// ── STOCK DATA  [country, iso3, iso_num, year, ev_stock] ─────────
+const STOCK_RAW = [
+  // Australia
+  ["Australia","AUS",36,2015,2100],["Australia","AUS",36,2016,2800],["Australia","AUS",36,2017,3900],["Australia","AUS",36,2018,5700],["Australia","AUS",36,2019,12000],["Australia","AUS",36,2020,17000],["Australia","AUS",36,2021,34000],["Australia","AUS",36,2022,67000],["Australia","AUS",36,2023,150000],["Australia","AUS",36,2024,250000],
+  // Austria
+  ["Austria","AUT",40,2015,5000],["Austria","AUT",40,2016,9100],["Austria","AUT",40,2017,15000],["Austria","AUT",40,2018,21000],["Austria","AUT",40,2019,30000],["Austria","AUT",40,2020,45000],["Austria","AUT",40,2021,77000],["Austria","AUT",40,2022,110000],["Austria","AUT",40,2023,160000],["Austria","AUT",40,2024,200000],
+  // Belgium
+  ["Belgium","BEL",56,2015,3800],["Belgium","BEL",56,2016,11000],["Belgium","BEL",56,2017,23000],["Belgium","BEL",56,2018,33000],["Belgium","BEL",56,2019,41000],["Belgium","BEL",56,2020,73000],["Belgium","BEL",56,2021,120000],["Belgium","BEL",56,2022,180000],["Belgium","BEL",56,2023,280000],["Belgium","BEL",56,2024,350000],
+  // Brazil
+  ["Brazil","BRA",76,2015,120],["Brazil","BRA",76,2016,250],["Brazil","BRA",76,2017,360],["Brazil","BRA",76,2018,700],["Brazil","BRA",76,2019,2100],["Brazil","BRA",76,2020,3800],["Brazil","BRA",76,2021,15000],["Brazil","BRA",76,2022,26000],["Brazil","BRA",76,2023,59000],["Brazil","BRA",76,2024,120000],
+  // Canada
+  ["Canada","CAN",124,2015,9900],["Canada","CAN",124,2016,15000],["Canada","CAN",124,2017,25000],["Canada","CAN",124,2018,45000],["Canada","CAN",124,2019,76000],["Canada","CAN",124,2020,130000],["Canada","CAN",124,2021,190000],["Canada","CAN",124,2022,280000],["Canada","CAN",124,2023,380000],["Canada","CAN",124,2024,620000],
+  // Chile
+  ["Chile","CHL",152,2015,37],["Chile","CHL",152,2016,54],["Chile","CHL",152,2017,170],["Chile","CHL",152,2018,280],["Chile","CHL",152,2019,440],["Chile","CHL",152,2020,550],["Chile","CHL",152,2021,820],["Chile","CHL",152,2022,1700],["Chile","CHL",152,2023,4100],["Chile","CHL",152,2024,8600],
+  // China
+  ["China","CHN",156,2015,210000],["China","CHN",156,2016,460000],["China","CHN",156,2017,930000],["China","CHN",156,2018,1700000],["China","CHN",156,2019,2600000],["China","CHN",156,2020,3500000],["China","CHN",156,2021,6200000],["China","CHN",156,2022,11000000],["China","CHN",156,2023,16000000],["China","CHN",156,2024,23000000],
+  // Colombia
+  ["Colombia","COL",170,2015,120],["Colombia","COL",170,2016,140],["Colombia","COL",170,2017,240],["Colombia","COL",170,2018,490],["Colombia","COL",170,2019,1200],["Colombia","COL",170,2020,1900],["Colombia","COL",170,2021,3000],["Colombia","COL",170,2022,5400],["Colombia","COL",170,2023,8200],["Colombia","COL",170,2024,19000],
+  // Costa Rica
+  ["Costa Rica","CRI",188,2015,12],["Costa Rica","CRI",188,2016,97],["Costa Rica","CRI",188,2017,120],["Costa Rica","CRI",188,2018,260],["Costa Rica","CRI",188,2019,610],["Costa Rica","CRI",188,2020,1200],["Costa Rica","CRI",188,2021,2200],["Costa Rica","CRI",188,2022,4800],["Costa Rica","CRI",188,2023,11000],["Costa Rica","CRI",188,2024,22000],
+  // Denmark
+  ["Denmark","DNK",208,2015,7900],["Denmark","DNK",208,2016,8700],["Denmark","DNK",208,2017,8800],["Denmark","DNK",208,2018,10000],["Denmark","DNK",208,2019,16000],["Denmark","DNK",208,2020,32000],["Denmark","DNK",208,2021,78000],["Denmark","DNK",208,2022,110000],["Denmark","DNK",208,2023,200000],["Denmark","DNK",208,2024,340000],
+  // Finland
+  ["Finland","FIN",246,2015,970],["Finland","FIN",246,2016,2400],["Finland","FIN",246,2017,5700],["Finland","FIN",246,2018,13000],["Finland","FIN",246,2019,25000],["Finland","FIN",246,2020,46000],["Finland","FIN",246,2021,77000],["Finland","FIN",246,2022,100000],["Finland","FIN",246,2023,140000],["Finland","FIN",246,2024,150000],
+  // France
+  ["France","FRA",250,2015,45000],["France","FRA",250,2016,67000],["France","FRA",250,2017,93000],["France","FRA",250,2018,120000],["France","FRA",250,2019,170000],["France","FRA",250,2020,280000],["France","FRA",250,2021,440000],["France","FRA",250,2022,620000],["France","FRA",250,2023,980000],["France","FRA",250,2024,1100000],
+  // Germany
+  ["Germany","DEU",276,2015,26000],["Germany","DEU",276,2016,34000],["Germany","DEU",276,2017,54000],["Germany","DEU",276,2018,83000],["Germany","DEU",276,2019,140000],["Germany","DEU",276,2020,310000],["Germany","DEU",276,2021,630000],["Germany","DEU",276,2022,1000000],["Germany","DEU",276,2023,1500000],["Germany","DEU",276,2024,1900000],
+  // Greece
+  ["Greece","GRC",300,2015,97],["Greece","GRC",300,2016,140],["Greece","GRC",300,2017,220],["Greece","GRC",300,2018,440],["Greece","GRC",300,2019,730],["Greece","GRC",300,2020,2200],["Greece","GRC",300,2021,7000],["Greece","GRC",300,2022,12000],["Greece","GRC",300,2023,21000],["Greece","GRC",300,2024,27000],
+  // Iceland
+  ["Iceland","ISL",352,2015,570],["Iceland","ISL",352,2016,960],["Iceland","ISL",352,2017,2200],["Iceland","ISL",352,2018,5600],["Iceland","ISL",352,2019,7500],["Iceland","ISL",352,2020,9600],["Iceland","ISL",352,2021,13000],["Iceland","ISL",352,2022,19000],["Iceland","ISL",352,2023,22000],["Iceland","ISL",352,2024,28000],
+  // India
+  ["India","IND",356,2015,4400],["India","IND",356,2016,4800],["India","IND",356,2017,7000],["India","IND",356,2018,7900],["India","IND",356,2019,8600],["India","IND",356,2020,12000],["India","IND",356,2021,23000],["India","IND",356,2022,72000],["India","IND",356,2023,150000],["India","IND",356,2024,240000],
+  // Indonesia
+  ["Indonesia","IDN",360,2019,29],["Indonesia","IDN",360,2020,370],["Indonesia","IDN",360,2021,1700],["Indonesia","IDN",360,2022,12000],["Indonesia","IDN",360,2023,29000],["Indonesia","IDN",360,2024,78000],
+  // Israel
+  ["Israel","ISR",376,2015,1200],["Israel","ISR",376,2016,1200],["Israel","ISR",376,2017,1700],["Israel","ISR",376,2018,5300],["Israel","ISR",376,2019,9200],["Israel","ISR",376,2020,15000],["Israel","ISR",376,2021,28000],["Israel","ISR",376,2022,44000],["Israel","ISR",376,2023,91000],["Israel","ISR",376,2024,160000],
+  // Italy
+  ["Italy","ITA",380,2015,4400],["Italy","ITA",380,2016,5800],["Italy","ITA",380,2017,7800],["Italy","ITA",380,2018,13000],["Italy","ITA",380,2019,23000],["Italy","ITA",380,2020,55000],["Italy","ITA",380,2021,120000],["Italy","ITA",380,2022,180000],["Italy","ITA",380,2023,250000],["Italy","ITA",380,2024,300000],
+  // Japan
+  ["Japan","JPN",392,2015,79000],["Japan","JPN",392,2016,88000],["Japan","JPN",392,2017,100000],["Japan","JPN",392,2018,120000],["Japan","JPN",392,2019,140000],["Japan","JPN",392,2020,160000],["Japan","JPN",392,2021,180000],["Japan","JPN",392,2022,210000],["Japan","JPN",392,2023,290000],["Japan","JPN",392,2024,340000],
+  // Korea
+  ["Korea","KOR",410,2015,5800],["Korea","KOR",410,2016,10000],["Korea","KOR",410,2017,24000],["Korea","KOR",410,2018,55000],["Korea","KOR",410,2019,89000],["Korea","KOR",410,2020,120000],["Korea","KOR",410,2021,190000],["Korea","KOR",410,2022,300000],["Korea","KOR",410,2023,420000],["Korea","KOR",410,2024,540000],
+  // Mexico
+  ["Mexico","MEX",484,2015,240],["Mexico","MEX",484,2016,530],["Mexico","MEX",484,2017,1500],["Mexico","MEX",484,2018,3100],["Mexico","MEX",484,2019,4400],["Mexico","MEX",484,2020,6400],["Mexico","MEX",484,2021,9900],["Mexico","MEX",484,2022,14000],["Mexico","MEX",484,2023,25000],["Mexico","MEX",484,2024,45000],
+  // Netherlands
+  ["Netherlands","NLD",528,2015,79000],["Netherlands","NLD",528,2016,99000],["Netherlands","NLD",528,2017,97000],["Netherlands","NLD",528,2018,98000],["Netherlands","NLD",528,2019,110000],["Netherlands","NLD",528,2020,180000],["Netherlands","NLD",528,2021,250000],["Netherlands","NLD",528,2022,340000],["Netherlands","NLD",528,2023,460000],["Netherlands","NLD",528,2024,590000],
+  // New Zealand
+  ["New Zealand","NZL",554,2015,490],["New Zealand","NZL",554,2016,1600],["New Zealand","NZL",554,2017,4600],["New Zealand","NZL",554,2018,8900],["New Zealand","NZL",554,2019,13000],["New Zealand","NZL",554,2020,17000],["New Zealand","NZL",554,2021,26000],["New Zealand","NZL",554,2022,46000],["New Zealand","NZL",554,2023,65000],["New Zealand","NZL",554,2024,78000],
+  // Norway
+  ["Norway","NOR",578,2015,59000],["Norway","NOR",578,2016,83000],["Norway","NOR",578,2017,120000],["Norway","NOR",578,2018,160000],["Norway","NOR",578,2019,220000],["Norway","NOR",578,2020,340000],["Norway","NOR",578,2021,450000],["Norway","NOR",578,2022,590000],["Norway","NOR",578,2023,690000],["Norway","NOR",578,2024,750000],
+  // Poland
+  ["Poland","POL",616,2015,2500],["Poland","POL",616,2016,2600],["Poland","POL",616,2017,3100],["Poland","POL",616,2018,3700],["Poland","POL",616,2019,4800],["Poland","POL",616,2020,9400],["Poland","POL",616,2021,19000],["Poland","POL",616,2022,31000],["Poland","POL",616,2023,52000],["Poland","POL",616,2024,67000],
+  // Portugal
+  ["Portugal","PRT",620,2015,2000],["Portugal","PRT",620,2016,2800],["Portugal","PRT",620,2017,4700],["Portugal","PRT",620,2018,8700],["Portugal","PRT",620,2019,16000],["Portugal","PRT",620,2020,26000],["Portugal","PRT",620,2021,41000],["Portugal","PRT",620,2022,57000],["Portugal","PRT",620,2023,91000],["Portugal","PRT",620,2024,130000],
+  // South Africa
+  ["South Africa","ZAF",710,2015,160],["South Africa","ZAF",710,2016,400],["South Africa","ZAF",710,2017,530],["South Africa","ZAF",710,2018,610],["South Africa","ZAF",710,2019,680],["South Africa","ZAF",710,2020,830],["South Africa","ZAF",710,2021,880],["South Africa","ZAF",710,2022,1400],["South Africa","ZAF",710,2023,2200],["South Africa","ZAF",710,2024,3300],
+  // Spain
+  ["Spain","ESP",724,2015,4400],["Spain","ESP",724,2016,6500],["Spain","ESP",724,2017,10000],["Spain","ESP",724,2018,16000],["Spain","ESP",724,2019,26000],["Spain","ESP",724,2020,45000],["Spain","ESP",724,2021,86000],["Spain","ESP",724,2022,130000],["Spain","ESP",724,2023,200000],["Spain","ESP",724,2024,240000],
+  // Sweden
+  ["Sweden","SWE",752,2015,9800],["Sweden","SWE",752,2016,19000],["Sweden","SWE",752,2017,32000],["Sweden","SWE",752,2018,49000],["Sweden","SWE",752,2019,67000],["Sweden","SWE",752,2020,120000],["Sweden","SWE",752,2021,190000],["Sweden","SWE",752,2022,240000],["Sweden","SWE",752,2023,290000],["Sweden","SWE",752,2024,360000],
+  // Switzerland
+  ["Switzerland","CHE",756,2015,7800],["Switzerland","CHE",756,2016,11000],["Switzerland","CHE",756,2017,16000],["Switzerland","CHE",756,2018,21000],["Switzerland","CHE",756,2019,34000],["Switzerland","CHE",756,2020,54000],["Switzerland","CHE",756,2021,86000],["Switzerland","CHE",756,2022,130000],["Switzerland","CHE",756,2023,180000],["Switzerland","CHE",756,2024,220000],
+  // Thailand
+  ["Thailand","THA",764,2015,320],["Thailand","THA",764,2016,320],["Thailand","THA",764,2017,320],["Thailand","THA",764,2018,8500],["Thailand","THA",764,2019,18000],["Thailand","THA",764,2020,24000],["Thailand","THA",764,2021,31000],["Thailand","THA",764,2022,42000],["Thailand","THA",764,2023,91000],["Thailand","THA",764,2024,160000],
+  // United Kingdom
+  ["United Kingdom","GBR",826,2015,27000],["United Kingdom","GBR",826,2016,55000],["United Kingdom","GBR",826,2017,87000],["United Kingdom","GBR",826,2018,130000],["United Kingdom","GBR",826,2019,160000],["United Kingdom","GBR",826,2020,220000],["United Kingdom","GBR",826,2021,380000],["United Kingdom","GBR",826,2022,550000],["United Kingdom","GBR",826,2023,980000],["United Kingdom","GBR",826,2024,1400000],
+];
+
+const DATA  = SHARE_RAW.map(([country,iso3,iso_num,year,share])   => ({country,iso3,iso_num,year,share}));
+const STOCK = STOCK_RAW.map(([country,iso3,iso_num,year,ev_stock]) => ({country,iso3,iso_num,year,ev_stock}));
+
+const FLAGS = {
+  NOR:"🇳🇴",ISL:"🇮🇸",SWE:"🇸🇪",FIN:"🇫🇮",DNK:"🇩🇰",NLD:"🇳🇱",AUT:"🇦🇹",CHE:"🇨🇭",
+  BEL:"🇧🇪",DEU:"🇩🇪",FRA:"🇫🇷",GBR:"🇬🇧",PRT:"🇵🇹",ESP:"🇪🇸",ITA:"🇮🇹",CHN:"🇨🇳",
+  USA:"🇺🇸",CAN:"🇨🇦",JPN:"🇯🇵",KOR:"🇰🇷",AUS:"🇦🇺",NZL:"🇳🇿",IND:"🇮🇳",IRL:"🇮🇪",
+  ISR:"🇮🇱",BRA:"🇧🇷",BGR:"🇧🇬",CHL:"🇨🇱",COL:"🇨🇴",CRI:"🇨🇷",HRV:"🇭🇷",CYP:"🇨🇾",
+  CZE:"🇨🇿",EST:"🇪🇪",GRC:"🇬🇷",HUN:"🇭🇺",IDN:"🇮🇩",LVA:"🇱🇻",LTU:"🇱🇹",LUX:"🇱🇺",
+  MEX:"🇲🇽",POL:"🇵🇱",ROU:"🇷🇴",SVK:"🇸🇰",SVN:"🇸🇮",ZAF:"🇿🇦",THA:"🇹🇭",TUR:"🇹🇷",MLT:"🇲🇹",
+};
+
+const SHORT = {
+  "United Kingdom":"UK","United States":"USA","New Zealand":"NZ",
+  "Czech Republic":"Czechia","South Africa":"S.Africa","Costa Rica":"C.Rica",
+};
+function shortName(c) { return SHORT[c] || c; }
+function isoOf(c) { return DATA.find(d=>d.country===c)?.iso3 || ""; }
+
+// ── STATE ────────────────────────────────────────────────────────
+let mapYear=2024, rankYear=2024, stockYear=2024;
+const DEFAULT = new Set(["Norway","China","United States","Germany","United Kingdom","Australia","Korea"]);
+const selectedCountries = new Set(DEFAULT);
+const ALL_COUNTRIES = [...new Set(DATA.map(d=>d.country))].sort();
+
+function getShareYear(y)  { return DATA.filter(d=>d.year===y).sort((a,b)=>b.share-a.share); }
+function getStockYear(y)  { return STOCK.filter(d=>d.year===y).sort((a,b)=>b.ev_stock-a.ev_stock); }
+function prevShare(c,y)   { const r=DATA.find(d=>d.country===c&&d.year===y-1); return r?r.share:null; }
+
+// ── COLOURS (stable, alphabetical) ──────────────────────────────
+const PAL=["#4c78a8","#f58518","#e45756","#72b7b2","#54a24b","#eeca3b","#b279a2","#ff9da6",
+           "#9d755d","#bab0ac","#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b",
+           "#e377c2","#7f7f7f","#bcbd22","#17becf","#aec7e8","#ffbb78","#98df8a","#ff9896","#c5b0d5"];
+const _cm=new Map(); let _ci=0;
+function colorFor(c){ if(!_cm.has(c)) _cm.set(c,PAL[_ci++%PAL.length]); return _cm.get(c); }
+ALL_COUNTRIES.forEach(c=>colorFor(c));
+
+// ── HERO STATS ──────────────────────────────────────────────────
+function updateHeroStats() {
+  const d=getShareYear(2024), leader=d[0], china=d.find(x=>x.country==="China");
+  const cs=STOCK.find(x=>x.country==="China"&&x.year===2024);
+  if(leader){ document.getElementById("stat-leader-pct").textContent=leader.share.toFixed(0)+"%";
+              document.getElementById("stat-leader-name").textContent=`${leader.country} (2024)`; }
+  if(china)  document.getElementById("stat-china-share").textContent=china.share.toFixed(0)+"%";
+  if(cs)     document.getElementById("stat-china-stock").textContent=(cs.ev_stock/1e6).toFixed(0)+"M";
+}
+
+// ── 01  LINE CHART ───────────────────────────────────────────────
+function renderLineChart() {
+  const el=document.getElementById("line-chart");
+  const countries=[...selectedCountries];
+  if(!countries.length){ el.innerHTML='<div class="chart-loading">Select a country above.</div>'; return; }
+
+  const data=DATA.filter(d=>selectedCountries.has(d.country));
+  const W=el.offsetWidth-32;
+  const isMobile=W<520;
+
+  const lastPoints=countries
+    .map(c=>DATA.filter(d=>d.country===c).sort((a,b)=>b.year-a.year)[0])
+    .filter(Boolean);
+
+  const yMax=Math.min(100,Math.ceil((d3.max(data,d=>d.share)||10)/10)*10+5);
+  const xTicks=isMobile?[2015,2017,2019,2021,2023]:[2015,2016,2017,2018,2019,2020,2021,2022,2023,2024];
+
+  const plot=Plot.plot({
+    width:W, height:isMobile?320:500,
+    marginLeft:52, marginRight:countries.length<=8?(isMobile?80:140):20,
+    marginBottom:44, marginTop:22,
+    x:{ label:null, tickFormat:d=>String(d), ticks:xTicks, tickSize:3 },
+    y:{ label:"↑ EV share (%)", domain:[0,yMax], tickFormat:d=>d+"%", grid:true },
+    style:{ fontFamily:"var(--font)", fontSize:"12px", background:"transparent" },
+    marks:[
+      Plot.ruleY([0],{stroke:"#d4d0c8"}),
+      Plot.areaY(data,{x:"year",y:"share",fill:d=>colorFor(d.country),fillOpacity:0.06,stroke:"none",curve:"monotone-x"}),
+      Plot.line(data, {x:"year",y:"share",stroke:d=>colorFor(d.country),strokeWidth:2.2,curve:"monotone-x"}),
+      Plot.dot(data,  {x:"year",y:"share",fill:d=>colorFor(d.country),r:3.5,
+                       title:d=>`${d.country} (${d.year})\n${d.share.toFixed(1)}% EV share`}),
+      ...(countries.length<=8?[
+        Plot.text(lastPoints,{
+          x:"year",y:"share",text:d=>shortName(d.country),
+          dx:9,fontSize:isMobile?10:11,fill:d=>colorFor(d.country),textAnchor:"start",
+        })
+      ]:[]),
+    ]
+  });
+
+  el.innerHTML="";
+  el.appendChild(plot);
+
+  const annoEl=document.getElementById("compare-annotations");
+  annoEl.innerHTML=countries.map(c=>{
+    const last=DATA.find(d=>d.country===c&&d.year===2024);
+    const iso3=isoOf(c);
+    return last?`<span class="anno-pill" style="background:${colorFor(c)}20;color:${colorFor(c)}">${FLAGS[iso3]||""} ${shortName(c)}: ${last.share.toFixed(1)}%</span>`:"";
+  }).join("");
+}
+
+// ── 02  WORLD MAP ────────────────────────────────────────────────
+let worldCache=null;
+async function loadWorld(){
+  if(worldCache) return worldCache;
+  worldCache=await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(r=>r.json());
+  return worldCache;
+}
+
+async function renderMap(year){
+  const el=document.getElementById("map-chart");
+  const leg=el.querySelector(".map-legend");
+  el.innerHTML='<div class="chart-loading">Rendering map…</div>';
+  if(leg) el.appendChild(leg);
+  try{
+    const world=await loadWorld();
+    const countries=topojson.feature(world,world.objects.countries);
+    const borders=topojson.mesh(world,world.objects.countries,(a,b)=>a!==b);
+    const sm=new Map(DATA.filter(d=>d.year===year).map(d=>[d.iso_num,d]));
+    const W=el.offsetWidth-32, H=Math.round(W*0.48);
+    const plot=Plot.plot({
+      width:W,height:H,projection:"equal-earth",
+      color:{type:"sequential",scheme:"Greens",domain:[0,90],unknown:"#d4d0c8",legend:false},
+      style:{fontFamily:"var(--font)",fontSize:"12px",background:"transparent"},
+      marks:[
+        Plot.sphere({fill:"#c8dde8"}),
+        Plot.graticule({stroke:"#adc5cf",strokeWidth:0.25,strokeDasharray:"2,6"}),
+        Plot.geo(countries.features,{
+          fill:d=>sm.get(+d.id)?.share??null, stroke:"white",strokeWidth:0.5,
+          title:d=>{const r=sm.get(+d.id); return r?`${r.country} ${FLAGS[r.iso3]||""}  ${r.share.toFixed(1)}% (${year})`:null;}
+        }),
+        Plot.geo(borders,{stroke:"white",strokeWidth:0.35}),
+      ]
+    });
+    const leg2=el.querySelector(".map-legend");
+    el.innerHTML=""; el.appendChild(plot);
+    if(leg2) el.appendChild(leg2);
+  } catch(err){
+    const leg2=el.querySelector(".map-legend");
+    el.innerHTML=`<div class="chart-loading" style="color:#c00">Map failed: ${err.message}</div>`;
+    if(leg2) el.appendChild(leg2);
+  }
+}
+
+// ── 03  STOCK CHART ──────────────────────────────────────────────
+function renderStockChart(year){
+  const el=document.getElementById("stock-chart");
+  const rows=getStockYear(year).slice(0,20);
+  if(!rows.length){ el.innerHTML='<div class="chart-loading">No data for this year.</div>'; return; }
+
+  const W=el.offsetWidth-32;
+  const isMobile=W<520;
+  const plotData=rows.map(d=>({
+    ...d, millions:d.ev_stock/1_000_000,
+    label:`${FLAGS[d.iso3]||""} ${shortName(d.country)}`,
+  }));
+
+  const plot=Plot.plot({
+    width:W,
+    height:450,
+    marginLeft:isMobile?90:130, marginRight:80, marginTop:16, marginBottom:40,
+    x:{ label:"Total EVs on road (millions)", tickFormat:d=>d===0?"0":`${d}M`, grid:true },
+    y:{ domain:plotData.map(d=>d.label), label:null },
+    style:{fontFamily:"var(--font)",fontSize:"12px",background:"transparent"},
+    marks:[
+      Plot.barX(plotData,{x:"millions",y:"label",fill:d=>d.country==="China"?"#1a6b3a":"#4c78a8",sort:{y:"-x"}}),
+      Plot.text(plotData,{
+        x:"millions",y:"label",
+        text:d=>d.millions>=0.1?`${d.millions.toFixed(1)}M`:`${(d.ev_stock/1000).toFixed(0)}k`,
+        dx:6,textAnchor:"start",fontSize:isMobile?10:11,fill:"#333",
+      }),
+      Plot.ruleX([0],{stroke:"#d4d0c8"}),
+    ]
+  });
+  el.innerHTML=""; el.appendChild(plot);
+}
+
+// ── 04  RANKINGS ─────────────────────────────────────────────────
+function renderRankings(year){
+  const tbody=document.getElementById("rank-tbody");
+  const rows=getShareYear(year);
+  tbody.innerHTML=rows.map((d,i)=>{
+    const prev=prevShare(d.country,year);
+    const delta=prev!==null?d.share-prev:null;
+    const ds=delta===null?"—"
+      :delta>0?`<span style="color:var(--green)">▲ ${delta.toFixed(1)}pp</span>`
+      :delta<0?`<span style="color:#c0392b">▼ ${Math.abs(delta).toFixed(1)}pp</span>`
+      :`<span style="color:var(--text-muted)">—</span>`;
+    return `<tr>
+      <td><span class="rank-num">${i+1}</span></td>
+      <td><span class="rank-flag">${FLAGS[d.iso3]||""}</span><span class="rank-country">${d.country}</span></td>
+      <td class="rank-bar-cell"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${d.share.toFixed(1)}%"></div></div></td>
+      <td><span class="rank-value">${d.share.toFixed(1)}%</span></td>
+      <td>${ds}</td>
+    </tr>`;
+  }).join("");
+}
+
+// ── COUNTRY TAGS ─────────────────────────────────────────────────
+function renderTags(){
+  const el=document.getElementById("country-tags");
+  el.innerHTML=ALL_COUNTRIES.map(c=>{
+    const active=selectedCountries.has(c), iso3=isoOf(c);
+    return `<button class="ctag ${active?"active":""}" data-country="${c}"
+      style="${active?`background:${colorFor(c)};border-color:${colorFor(c)};`:""}">
+      ${FLAGS[iso3]||""} ${c}</button>`;
+  }).join("");
+  el.querySelectorAll(".ctag").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const c=btn.dataset.country;
+      if(selectedCountries.has(c)){
+        if(selectedCountries.size<=1) return;
+        selectedCountries.delete(c);
+        btn.classList.remove("active");
+        btn.style.background=btn.style.borderColor=btn.style.color="";
+      } else {
+        selectedCountries.add(c);
+        btn.classList.add("active");
+        btn.style.background=btn.style.borderColor=colorFor(c);
+        btn.style.color="white";
+      }
+      renderLineChart();
+    });
+  });
+}
+
+// ── SLIDERS ──────────────────────────────────────────────────────
+document.getElementById("map-year-slider").addEventListener("input",e=>{
+  mapYear=+e.target.value; document.getElementById("map-year-label").textContent=mapYear; renderMap(mapYear);
+});
+document.getElementById("stock-year-slider").addEventListener("input",e=>{
+  stockYear=+e.target.value; document.getElementById("stock-year-label").textContent=stockYear; renderStockChart(stockYear);
+});
+document.getElementById("rank-year-slider").addEventListener("input",e=>{
+  rankYear=+e.target.value; document.getElementById("rank-year-label").textContent=rankYear; renderRankings(rankYear);
+});
+
+// ── RESIZE ───────────────────────────────────────────────────────
+let _rt;
+window.addEventListener("resize",()=>{ clearTimeout(_rt); _rt=setTimeout(()=>{ renderMap(mapYear); renderLineChart(); renderStockChart(stockYear); },280); });
+
+// ── INIT ─────────────────────────────────────────────────────────
+updateHeroStats();
+renderTags();
+renderRankings(rankYear);
+renderLineChart();
+renderStockChart(stockYear);
+renderMap(mapYear);
+</script>
+</body>
+</html>
