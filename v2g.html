@@ -138,6 +138,57 @@
     /* ── Household chart note ────────────────────────────────────── */
     .house-note { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.85rem; line-height: 1.6; }
 
+    /* ── Economy 7 savings box ───────────────────────────────────── */
+    .savings-box { background: var(--surface); border: 1px solid var(--border);
+                   border-radius: var(--radius); padding: 1.25rem 1.5rem;
+                   box-shadow: var(--shadow); margin-top: 1.25rem; }
+    .savings-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+                     letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 1rem; }
+    .savings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+                    gap: 1rem; margin-bottom: 1rem; }
+    .savings-item { display: flex; flex-direction: column; gap: 0.15rem; }
+    .savings-item-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;
+                          letter-spacing: 0.05em; font-weight: 600; }
+    .savings-item-val { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em;
+                        font-variant-numeric: tabular-nums; color: var(--text); }
+    .savings-item-val.green { color: var(--green); }
+    .savings-item-sub { font-size: 0.7rem; color: var(--text-muted); }
+    .savings-formula { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6;
+                       border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.25rem; }
+    .savings-formula strong { color: var(--text); }
+    .legend-swatch-e7 { width: 20px; height: 0; border-top: 2px dashed #e07000; flex-shrink: 0;
+                        margin-top: 1px; }
+
+    /* ── BESS comparison cards ───────────────────────────────────── */
+    .bess-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+                 gap: 1rem; margin-bottom: 1.5rem; }
+    .bess-card { background: var(--surface); border: 1px solid var(--border);
+                 border-radius: var(--radius); padding: 1.25rem 1.5rem;
+                 box-shadow: var(--shadow); position: relative; overflow: hidden; }
+    .bess-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0;
+                         height: 3px; background: var(--border); }
+    .bess-card.bess-now::before   { background: #888; }
+    .bess-card.bess-2030::before  { background: var(--blue); }
+    .bess-card.bess-ev::before    { background: var(--green); }
+    .bess-card.bess-mult::before  { background: #c05a00; }
+    .bess-card-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+                       letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .bess-card-val { font-size: 2rem; font-weight: 700; letter-spacing: -0.04em;
+                     color: var(--text); font-variant-numeric: tabular-nums; line-height: 1; }
+    .bess-card.bess-ev .bess-card-val   { color: var(--green); }
+    .bess-card.bess-mult .bess-card-val { color: #c05a00; font-size: 2.4rem; }
+    .bess-card-unit { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+    .bess-card-desc { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.5rem;
+                      line-height: 1.5; }
+    .bess-bar-wrap { margin-top: 0.75rem; }
+    .bess-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bess-bar-fill { height: 100%; border-radius: 3px; }
+    .bess-insight { background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
+                    border: 1.5px solid #f0d070; border-radius: var(--radius);
+                    padding: 1.25rem 1.5rem; margin-top: 0; }
+    .bess-insight-text { font-size: 0.88rem; color: #5a3e00; line-height: 1.65; }
+    .bess-insight-text strong { color: #3a2800; }
+
     /* ── Peaker plant callout ─────────────────────────────────────── */
     .peaker-callout { display: flex; align-items: flex-start; gap: 1.1rem;
                       background: #fff8e1; border: 1.5px solid #f0d070;
@@ -331,10 +382,49 @@
             <div class="legend-swatch" style="background:var(--green);height:3px;"></div>
             With V2G
           </div>
+          <div class="legend-item">
+            <div class="legend-swatch-e7"></div>
+            EV charging (E7)
+          </div>
         </div>
       </div>
       <div id="house-chart" style="min-height:260px;"></div>
       <div class="house-note" id="house-note"></div>
+    </div>
+
+    <!-- Economy 7 savings box -->
+    <div class="savings-box">
+      <div class="savings-title">Economy 7 tariff savings — single household</div>
+      <div class="savings-grid">
+        <div class="savings-item">
+          <div class="savings-item-label">Energy shifted</div>
+          <div class="savings-item-val" id="sav-shifted">—<span style="font-size:0.8rem;font-weight:500;color:var(--text-muted)"> kWh</span></div>
+          <div class="savings-item-sub">Discharged from battery</div>
+        </div>
+        <div class="savings-item">
+          <div class="savings-item-label">Peak cost avoided</div>
+          <div class="savings-item-val" id="sav-avoided">—</div>
+          <div class="savings-item-sub" id="sav-avoided-sub">@ 28p/kWh day rate</div>
+        </div>
+        <div class="savings-item">
+          <div class="savings-item-label">E7 recharge cost</div>
+          <div class="savings-item-val" id="sav-recharge">—</div>
+          <div class="savings-item-sub">@ 9p/kWh E7 night rate</div>
+        </div>
+        <div class="savings-item">
+          <div class="savings-item-label">Daily net saving</div>
+          <div class="savings-item-val green" id="sav-daily">—</div>
+          <div class="savings-item-sub">Per V2G day</div>
+        </div>
+        <div class="savings-item">
+          <div class="savings-item-label">Annual saving</div>
+          <div class="savings-item-val green" id="sav-annual">—</div>
+          <div class="savings-item-sub">If V2G active every day</div>
+        </div>
+      </div>
+      <div class="savings-formula" id="sav-formula">
+        Adjust sliders to calculate savings.
+      </div>
     </div>
 
     <!-- Peaker plant callout -->
@@ -348,13 +438,61 @@
       </div>
     </div>
 
-    <div class="section-header" style="margin-top:2.5rem; margin-bottom:1rem;">
+    <div class="section-header" style="margin-top:2.5rem; margin-bottom:1.25rem;">
       <div class="section-tag">04 — BESS</div>
-      <h2>Comparison to BESS</h2>
-      <p>Current Battery Energy Storage System (BESS) capacity is 12.9GWh</p>
-      <p>By 2030, this is predicted to be ~50GWh</p>
-      <p>If the UK has 5 million EVs on the road by 2030 (~ government target), the total capacity will be ~300GWh</p>
-      <p>This capacity is 6x larger than predicted BESS, and even if only partially unlocked it could provide significant grid support</p>
+      <h2>How does V2G compare to grid-scale batteries?</h2>
+      <p>The UK is rapidly building utility-scale Battery Energy Storage Systems (BESS).
+         But a V2G-enabled EV fleet represents a far larger distributed storage resource —
+         and one that grows automatically as EVs reach mass market.</p>
+    </div>
+
+    <div class="bess-grid">
+      <div class="bess-card bess-now">
+        <div class="bess-card-label">UK BESS capacity today</div>
+        <div class="bess-card-val">12.9<span class="bess-card-unit"> GWh</span></div>
+        <div class="bess-card-desc">Installed grid-scale battery storage as of 2025 — predominantly co-located with solar and wind assets.</div>
+        <div class="bess-bar-wrap">
+          <div class="bess-bar-track">
+            <div class="bess-bar-fill" style="width:4.3%;background:#aaa;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bess-card bess-2030">
+        <div class="bess-card-label">Predicted BESS by 2030</div>
+        <div class="bess-card-val" style="color:var(--blue)">~50<span class="bess-card-unit"> GWh</span></div>
+        <div class="bess-card-desc">National Grid ESO forecast for grid-scale storage needed to support 2030 clean energy targets.</div>
+        <div class="bess-bar-wrap">
+          <div class="bess-bar-track">
+            <div class="bess-bar-fill" style="width:16.7%;background:var(--blue);"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bess-card bess-ev">
+        <div class="bess-card-label">EV fleet storage (5M EVs, 2030)</div>
+        <div class="bess-card-val">300<span class="bess-card-unit"> GWh</span></div>
+        <div class="bess-card-desc">5 million EVs × 60 kWh battery. Even at 30% usable V2G capacity that's 90 GWh — nearly 2× the 2030 BESS target.</div>
+        <div class="bess-bar-wrap">
+          <div class="bess-bar-track">
+            <div class="bess-bar-fill" style="width:100%;background:var(--green);"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bess-card bess-mult">
+        <div class="bess-card-label">EV vs 2030 BESS target</div>
+        <div class="bess-card-val">6×</div>
+        <div class="bess-card-desc">The potential EV storage pool is six times larger than the predicted 2030 grid-scale BESS target.</div>
+      </div>
+    </div>
+
+    <div class="bess-insight">
+      <div class="bess-insight-text">
+        Unlike fixed BESS assets, EV batteries come pre-financed by vehicle owners —
+        the grid gets storage for free, and drivers get paid. V2G effectively turns
+        <strong>every driveway into a micro power station</strong>. Even if only
+        <strong>10% of a 5M EV fleet</strong> participated, that's 30 GWh of dispatchable
+        storage — more than twice the entire UK grid-scale BESS capacity today, and
+        enough to power roughly <strong>1.5 million homes for a full day</strong>.
+      </div>
     </div>
 
     <div class="source">
@@ -411,6 +549,16 @@ const WINDOW_INDICES = [];
 for (let i = V2G_WINDOW_START; i < 48; i++) WINDOW_INDICES.push(i);
 for (let i = 0; i <= V2G_WINDOW_END; i++) WINDOW_INDICES.push(i);
 
+// Economy 7 charging window: 00:30–07:30 (periods 1–14 inclusive)
+// 14 half-hour periods = 7 hours of cheap overnight electricity
+const E7_START = 1;   // 00:30
+const E7_END   = 14;  // 07:00 (last charging half-hour; 07:30 is when it ends)
+const E7_HOURS = (E7_END - E7_START + 1) * 0.5;  // = 7 hours
+
+// Economy 7 tariff rates (pence/kWh, typical UK 2025)
+const E7_PEAK_RATE_P = 28;  // daytime / on-peak rate
+const E7_NIGHT_RATE_P = 9;  // off-peak E7 night rate
+
 // ── REPRESENTATIVE GB WINTER WEEKDAY DEMAND PROFILE (GW) ──────────
 // Source: National Grid ESO historical half-hourly settlement data
 // 48 periods: index 0 = 00:00, index 47 = 23:30
@@ -461,10 +609,12 @@ const HOUSE_KW = [
 // ── HOUSEHOLD V2G ALGORITHM ────────────────────────────────────────
 // 1 EV, 7.2 kW charger, energy budget = usableCapPct × 60 kWh.
 // Same greedy peak-shaving as fleet version, but units are kW/kWh.
+// Also computes the Economy 7 recharging schedule to restore SOC by 08:30.
 function computeHouseholdV2G(usableCapPct) {
   const energyBudgetKWh = (usableCapPct / 100) * AVG_BATTERY_KWH;
   const maxPowerKW      = CHARGER_KW;
 
+  // ── V2G discharge (evening/night peak shaving) ──
   const sorted = [...WINDOW_INDICES].sort((a, b) => HOUSE_KW[b] - HOUSE_KW[a]);
   const modified = [...HOUSE_KW];
   let energyLeft = energyBudgetKWh;
@@ -476,28 +626,39 @@ function computeHouseholdV2G(usableCapPct) {
     energyLeft -= maxReduceKW * 0.5;
   }
 
-  return {
-    modified,
-    energyBudgetKWh,
-    energyShiftedKWh: energyBudgetKWh - energyLeft
-  };
+  const energyShiftedKWh = energyBudgetKWh - energyLeft;
+
+  // ── Economy 7 recharging (00:30–07:30) ──────────
+  // Spread charging evenly across E7 window to restore exactly the energy discharged.
+  // Rate capped at charger max (7.2 kW).
+  const chargingRateKW = Math.min(maxPowerKW, energyShiftedKWh / E7_HOURS);
+  const charging = new Array(48).fill(0);
+  let toRestore = energyShiftedKWh;
+  for (let i = E7_START; i <= E7_END && toRestore > 0.001; i++) {
+    const thisKW = Math.min(chargingRateKW, toRestore / 0.5);
+    charging[i] = thisKW;
+    toRestore  -= thisKW * 0.5;
+  }
+
+  return { modified, charging, energyBudgetKWh, energyShiftedKWh };
 }
 
 // ── HOUSEHOLD CHART RENDERER ───────────────────────────────────────
 function renderHouseholdChart(usableCapPct, numEVs, participationPct) {
-  const { modified, energyBudgetKWh, energyShiftedKWh }
+  const { modified, charging, energyBudgetKWh, energyShiftedKWh }
     = computeHouseholdV2G(usableCapPct);
 
   const el    = document.getElementById("house-chart");
   const W     = el.clientWidth || 900;
   const isMob = W < 520;
 
-  const baseline = HOUSE_KW.map((d, i) => ({ period: i, demand: d }));
-  const v2gLine  = modified.map((d, i)  => ({ period: i, demand: d }));
-  const delta    = HOUSE_KW.map((d, i)  => ({ period: i, y1: modified[i], y2: d }))
-                            .filter(d => d.y2 > d.y1);
+  const baseline    = HOUSE_KW.map((d, i) => ({ period: i, demand: d }));
+  const v2gLine     = modified.map((d, i)  => ({ period: i, demand: d }));
+  const chargeLine  = charging.map((d, i)  => ({ period: i, demand: d }));
+  const delta       = HOUSE_KW.map((d, i)  => ({ period: i, y1: modified[i], y2: d }))
+                               .filter(d => d.y2 > d.y1);
 
-  const yMax   = Math.ceil(d3.max(HOUSE_KW) * 1.1 * 2) / 2;  // round to nearest 0.5 kW
+  const yMax = Math.ceil(Math.max(d3.max(HOUSE_KW), d3.max(charging)) * 1.1 * 2) / 2;
   const xTicks = isMob
     ? [0, 8, 16, 24, 32, 40, 47]
     : [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 47];
@@ -552,6 +713,12 @@ function renderHouseholdChart(usableCapPct, numEVs, participationPct) {
         stroke: "#1a6b3a", strokeWidth: 2.5,
         curve: "step-after"
       }),
+      // E7 background band (00:30–07:30)
+      Plot.rect([{ x1: E7_START - 0.25, x2: E7_END + 0.25, y1: 0, y2: yMax }], {
+        x1: "x1", x2: "x2", y1: "y1", y2: "y2",
+        fill: "#fff3cd", fillOpacity: 0.7
+      }),
+
       Plot.dot(
         [baseline.reduce((a, b) => a.demand > b.demand ? a : b)],
         { x: "period", y: "demand", fill: "#888", r: 4 }
@@ -559,7 +726,21 @@ function renderHouseholdChart(usableCapPct, numEVs, participationPct) {
       Plot.dot(
         [v2gLine.reduce((a, b) => a.demand > b.demand ? a : b)],
         { x: "period", y: "demand", fill: "#1a6b3a", r: 5, stroke: "white", strokeWidth: 1.5 }
-      )
+      ),
+
+      // EV charging line (Economy 7 recharge) — dashed orange
+      Plot.lineY(chargeLine.filter(d => d.demand > 0), {
+        x: "period", y: "demand",
+        stroke: "#e07000", strokeWidth: 2, strokeDasharray: "6,3",
+        curve: "step-after"
+      }),
+      // Dot at start of charging
+      ...(energyShiftedKWh > 0 ? [
+        Plot.dot(
+          [chargeLine.find(d => d.demand > 0)].filter(Boolean),
+          { x: "period", y: "demand", fill: "#e07000", r: 4, stroke: "white", strokeWidth: 1.5 }
+        )
+      ] : [])
     ]
   });
 
@@ -577,8 +758,45 @@ function renderHouseholdChart(usableCapPct, numEVs, participationPct) {
     ? "Set usable V2G capacity above 0% to see peak-shaving in action."
     : `V2G reduces this household's evening peak from ${housePeakBefore.toFixed(2)} kW` +
       ` to ${housePeakAfter.toFixed(2)} kW — a ${pct.toFixed(0)}% reduction. ` +
-      `${energyShiftedKWh.toFixed(1)} kWh discharged, leaving ` +
-      `${energyInReserve.toFixed(1)} kWh in reserve (available to recharge overnight).`;
+      `${energyShiftedKWh.toFixed(1)} kWh discharged during the evening, then recharged` +
+      ` at ${charging.find(v=>v>0)?.toFixed(2) ?? "0.00"} kW during Economy 7 hours` +
+      ` (00:30–07:30) to restore the battery to its original state of charge by 08:30.`;
+
+  // ── UPDATE E7 SAVINGS BOX ───────────────────────────────────────
+  const peakCostAvoided = energyShiftedKWh * E7_PEAK_RATE_P / 100;   // £
+  const rechargeCost    = energyShiftedKWh * E7_NIGHT_RATE_P / 100;  // £
+  const dailySaving     = peakCostAvoided - rechargeCost;
+  const annualSaving    = dailySaving * 365;
+
+  function fmtGBP(v) {
+    return v < 1 ? `${Math.round(v * 100)}p` : `£${v.toFixed(2)}`;
+  }
+
+  if (usableCapPct === 0 || energyShiftedKWh < 0.01) {
+    ["sav-shifted","sav-avoided","sav-recharge","sav-daily","sav-annual"].forEach(id => {
+      document.getElementById(id).innerHTML = "—";
+    });
+    document.getElementById("sav-formula").textContent = "Adjust usable V2G capacity to calculate savings.";
+  } else {
+    const chargingRateKW = charging.find(v => v > 0) ?? 0;
+    document.getElementById("sav-shifted").innerHTML =
+      `${energyShiftedKWh.toFixed(1)}<span style="font-size:0.8rem;font-weight:500;color:var(--text-muted)"> kWh</span>`;
+    document.getElementById("sav-avoided").innerHTML =
+      `<span style="color:var(--text)">${fmtGBP(peakCostAvoided)}</span>`;
+    document.getElementById("sav-recharge").innerHTML =
+      `<span style="color:var(--text-muted)">−${fmtGBP(rechargeCost)}</span>`;
+    document.getElementById("sav-daily").innerHTML =
+      `${fmtGBP(dailySaving)}`;
+    document.getElementById("sav-annual").innerHTML =
+      `£${Math.round(annualSaving).toLocaleString()}`;
+    document.getElementById("sav-formula").innerHTML =
+      `<strong>${energyShiftedKWh.toFixed(1)} kWh</strong> discharged during peak ×` +
+      ` <strong>${E7_PEAK_RATE_P}p</strong> (day rate) = <strong>${fmtGBP(peakCostAvoided)}</strong> avoided. ` +
+      `Recharge at <strong>${chargingRateKW.toFixed(2)} kW</strong> for 7 Economy 7 hours` +
+      ` × <strong>${E7_NIGHT_RATE_P}p</strong> (E7 night rate) = <strong>${fmtGBP(rechargeCost)}</strong>. ` +
+      `Net daily saving: <strong>${fmtGBP(dailySaving)}</strong> · Annual: <strong>£${Math.round(annualSaving).toLocaleString()}</strong>. ` +
+      `Rates: Octopus Go / E7 tariffs (2025). Does not account for battery degradation.`;
+  }
 
   // ── UPDATE PEAKER CALLOUT ───────────────────────────────────────
   // A typical UK open-cycle gas turbine (OCGT) peaker plant = ~400 MW = 0.4 GW
